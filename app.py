@@ -443,6 +443,31 @@ def create_habit() -> Any:
         if exists:
             return jsonify({"error": "You are already tracking this habit."}), 400
 
+        # AI check: Detect if the habit is a "bad habit, addiction, or dependency" that the user wants to reduce/overcome.
+        try:
+            ai_prompt = (
+                f"You are a clinical CBT assistant evaluating habit names registered by a recovery user.\n"
+                f"Habit Name: '{name}'\n"
+                f"Determine if this is a negative/harmful habit, addiction, or dependency that should be reduced or broken (e.g. smoking, screen time, drinking, procrastination, nail biting).\n"
+                f"If it is a positive habit (e.g. reading, gym, studying, drinking water, sleeping, saving money) that the user wants to increase, it does not fit a behavioral reduction model.\n"
+                f"Respond ONLY with a JSON object containing:\n"
+                f"{{\n"
+                f'  "is_bad_habit": true or false,\n'
+                f"  \"message\": \"If false, a polite 1-2 sentence CBT explanation guiding the user to frame their target as the negative trigger instead (e.g., 'Procrastination' instead of 'Studying').\"\n"
+                f"}}"
+            )
+            response_text, _ = run_ai_generation(ai_prompt, response_type="json")
+            ai_res = json.loads(response_text)
+            if ai_res.get("is_bad_habit") is False:
+                msg = ai_res.get(
+                    "message",
+                    "Rohi is designed to help you reduce harmful habits. Try tracking the negative action instead.",
+                )
+                return jsonify({"error": f"AI Validation: {msg}"}), 400
+        except Exception as e:
+            # Fallback if AI fails: allow creation to preserve app availability
+            logger.warning(f"AI Habit Validation failed: {e}")
+
         habit = Habit(
             user_id=session["user_id"],
             name=name,

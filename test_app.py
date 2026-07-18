@@ -457,6 +457,47 @@ class RohiTestCase(unittest.TestCase):
         self.assertEqual(dash_response.status_code, 302)
         self.assertIn("/", dash_response.headers["Location"])
 
+    # 13. AI Bad Habit Detection Validation Tests
+    @patch("app.run_ai_generation")
+    def test_habit_creation_positive_habit_rejected_by_ai(self, mock_run_ai):
+        """Verify that positive routines are detected and blocked by the AI validation check."""
+        mock_response_json = {
+            "is_bad_habit": False,
+            "message": "Reading is a positive routine. Try tracking Procrastination instead.",
+        }
+        mock_run_ai.return_value = (json.dumps(mock_response_json), "gemini")
+
+        payload = {"name": "Reading books", "unit": "pages", "daily_limit": 20}
+        response = self.client.post(
+            "/api/habit/create",
+            data=json.dumps(payload),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+        data = json.loads(response.get_data(as_text=True))
+        self.assertIn("error", data)
+        self.assertIn("AI Validation", data["error"])
+
+    @patch("app.run_ai_generation")
+    def test_habit_creation_negative_habit_accepted_by_ai(self, mock_run_ai):
+        """Verify that negative habits/addictions are approved by the AI validation check."""
+        mock_response_json = {"is_bad_habit": True, "message": ""}
+        mock_run_ai.return_value = (json.dumps(mock_response_json), "gemini")
+
+        payload = {
+            "name": "Social Media Scrolling",
+            "unit": "minutes",
+            "daily_limit": 45,
+        }
+        response = self.client.post(
+            "/api/habit/create",
+            data=json.dumps(payload),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 201)
+        data = json.loads(response.get_data(as_text=True))
+        self.assertEqual(data["name"], "Social Media Scrolling")
+
 
 if __name__ == "__main__":
     unittest.main()
