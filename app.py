@@ -1,11 +1,15 @@
-import os, secrets
+import os
+import secrets
 import json
 import logging
 import datetime
+import time
 import requests
+import google.generativeai as genai
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
+from sqlalchemy.orm import joinedload
 from database import SessionLocal
 from models import User, Habit, Log, Chat, Nudge, init_db
 from typing import Any, Tuple, Optional, Dict
@@ -27,7 +31,6 @@ app.permanent_session_lifetime = datetime.timedelta(hours=2)
 _rate_limits: dict = {}
 def rate_limit_check(key: str, max_requests: int = 10, window_seconds: int = 60) -> bool:
     """Returns True if rate limit exceeded."""
-    import time
     now = time.time()
     if key not in _rate_limits:
         _rate_limits[key] = []
@@ -98,7 +101,6 @@ def run_ai_generation(prompt: str, response_type: str = "text") -> Tuple[str, st
     
     # Primary: Gemini
     if gemini_key and gemini_key != "your_gemini_api_key_here":
-        import google.generativeai as genai
         genai.configure(api_key=gemini_key)
         
         models_to_try = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-1.5-flash-latest"]
@@ -494,7 +496,6 @@ def chat_coaching() -> Any:
         db.commit()
 
         # Retrieve recent logs to provide context for AI adaptive tone adjustment
-        from sqlalchemy.orm import joinedload
         recent_logs = db.query(Log).options(joinedload(Log.habit)).filter(Log.user_id == user.id).order_by(Log.created_at.desc()).limit(5).all()
         log_summary = []
         emotional_states = []
@@ -588,7 +589,6 @@ def get_nudge() -> Any:
 
         # Generate a new nudge using historical logs
         user = db.query(User).filter(User.id == session["user_id"]).first()
-        from sqlalchemy.orm import joinedload
         logs = db.query(Log).options(joinedload(Log.habit)).filter(Log.user_id == user.id).order_by(Log.created_at.desc()).limit(15).all()
         
         log_data = []

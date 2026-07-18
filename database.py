@@ -1,20 +1,17 @@
 import os
+from typing import Generator
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
 # Load environment variables
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///habit_breaker_fallback.db")
 
 # Resolve Render legacy 'postgres://' schema
-if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-
-if not DATABASE_URL:
-    # Local fallback for development testing
-    DATABASE_URL = "sqlite:///habit_breaker_fallback.db"
 
 # Create engine
 # For Neon/PostgreSQL, we ensure pool_pre_ping is active to handle idle connection drops
@@ -30,8 +27,12 @@ else:
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-def get_db():
-    """Context manager database session dependency."""
+def get_db() -> Generator[Session, None, None]:
+    """
+    Context manager database session generator dependency.
+    Yields:
+        Session: SQLAlchemy active database connection session.
+    """
     db = SessionLocal()
     try:
         yield db
