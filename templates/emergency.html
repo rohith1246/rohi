@@ -17,12 +17,12 @@
                 <div class="breathing-circle-outer" id="breath-outer">
                     <div class="breathing-circle-inner" id="breath-inner"></div>
                 </div>
-                <div class="breathing-label" id="breath-label">Click Start to Begin</div>
-                <div class="breathing-sublabel" id="breath-timer">4s cycles</div>
+                <div class="breathing-label" id="breath-label" aria-live="polite">Click Start to Begin</div>
+                <div class="breathing-sublabel" id="breath-timer" role="timer">4s cycles</div>
             </div>
 
             <div class="breathing-controls" style="display: flex; justify-content: center; gap: 1rem; margin-top: 2rem;">
-                <button type="button" class="btn-primary" id="btn-breath-control" onclick="toggleBreathing()">Start Breathing</button>
+                <button type="button" class="btn-primary" id="btn-breath-control" onclick="toggleBreathing()" aria-label="Toggle Box Breathing">Start Breathing</button>
             </div>
         </section>
     </div>
@@ -70,7 +70,7 @@
         </section>
 
         <!-- Dynamic Urge Surf Result -->
-        <section id="urge-result" class="card-main" style="display: none; margin-top: 1.5rem; border-top: 4px solid #ef4444;">
+        <section id="urge-result" class="card-main" style="display: none; margin-top: 1.5rem; border-top: 4px solid #ef4444;" aria-live="polite">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                 <h3 style="color: #ef4444; font-size: 1.2rem;">Your Habit Survival Plan</h3>
                 <span id="urge-provider" class="provider-badge groq">gemini</span>
@@ -160,7 +160,8 @@
                 const response = await fetch("/api/emergency/intervention", {
                     method: "POST",
                     headers: {
-                        "Content-Type": "application/json"
+                        "Content-Type": "application/json",
+                        "X-CSRF-Token": "{{ session.csrf_token }}"
                     },
                     body: JSON.stringify({
                         habit_id: habitId,

@@ -237,6 +237,194 @@ class RohiTestCase(unittest.TestCase):
             # Restore testing mode state
             app.config["TESTING"] = True
 
+    # 6. Authorization Guard Tests
+    def test_dashboard_requires_login(self):
+        """Verify dashboard redirects to index when not logged in."""
+        with self.client.session_transaction() as sess:
+            sess.clear()
+        response = self.client.get("/dashboard")
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/", response.headers["Location"])
+
+    def test_api_habit_create_requires_login(self):
+        """Verify API returns 401 when session is not set."""
+        with self.client.session_transaction() as sess:
+            sess.clear()
+        payload = {"name": "Test", "unit": "mins", "daily_limit": 10}
+        response = self.client.post(
+            "/api/habit/create",
+            data=json.dumps(payload),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 401)
+
+    def test_api_log_create_requires_login(self):
+        """Verify log API returns 401 when session is not set."""
+        with self.client.session_transaction() as sess:
+            sess.clear()
+        payload = {"habit_id": 1, "logged_value": 5, "emotional_state": "OK", "trigger_context": "test"}
+        response = self.client.post(
+            "/api/log/create",
+            data=json.dumps(payload),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 401)
+
+    # 7. Duplicate Habit Prevention Test
+    def test_duplicate_habit_rejected(self):
+        """Verify the same habit cannot be planted twice by the same user."""
+        habit = Habit(user_id=self.test_user_id, name="Smoking", unit="cigs", daily_limit=5)
+        self.db.add(habit)
+        self.db.commit()
+
+        payload = {"name": "Smoking", "unit": "cigs", "daily_limit": 5}
+        response = self.client.post(
+            "/api/habit/create",
+            data=json.dumps(payload),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 400)
+        data = json.loads(response.get_data(as_text=True))
+        self.assertIn("error", data)
+
+    # 8. Empty / Missing Input Rejection
+    def test_habit_missing_name_rejected(self):
+        """Verify that creating a habit without a name returns 400."""
+        payload = {"name": "", "unit": "minutes", "daily_limit": 30}
+        response = self.client.post(
+            "/api/habit/create",
+            data=json.dumps(payload),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_habit_missing_unit_rejected(self):
+        """Verify that creating a habit without a unit returns 400."""
+        payload = {"name": "Gaming", "unit": "", "daily_limit": 60}
+        response = self.client.post(
+            "/api/habit/create",
+            data=json.dumps(payload),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 400)
+
+    # 9. Severity Classification Boundary Tests
+    def test_severity_at_exact_limit_is_struggle(self):
+        """Verify that logging exactly the daily limit results in Struggle severity."""
+        habit = Habit(user_id=self.test_user_id, name="Coffee", unit="cups", daily_limit=3, successful_days=0)
+        self.db.add(habit)
+        self.db.commit()
+
+        payload = {
+            "habit_id": habit.id,
+            "logged_value": 3,  # Exactly at limit
+            "emotional_state": "Neutral",
+            "trigger_context": "Morning"
+        }
+        response = self.client.post(
+            "/api/log/create",
+            data=json.dumps(payload),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 201)
+        data = json.loads(response.get_data(as_text=True))
+        self.assertEqual(data["log"]["severity"], "Struggle")
+
+    def test_severity_below_limit_is_success(self):
+        """Verify that logging below the daily limit results in Success severity."""
+        habit = Habit(user_id=self.test_user_id, name="Coffee", unit="cups", daily_limit=3, successful_days=0)
+        self.db.add(habit)
+        self.db.commit()
+
+        payload = {
+            "habit_id": habit.id,
+            "logged_value": 1,  # Below limit
+            "emotional_state": "Happy",
+            "trigger_context": "Breakfast"
+        }
+        response = self.client.post(
+            "/api/log/create",
+            data=json.dumps(payload),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 201)
+        data = json.loads(response.get_data(as_text=True))
+        self.assertEqual(data["log"]["severity"], "Success")
+
+    def test_severity_above_limit_is_slip(self):
+        """Verify that logging above the daily limit results in Slip severity."""
+        habit = Habit(user_id=self.test_user_id, name="Coffee", unit="cups", daily_limit=3, successful_days=0)
+        self.db.add(habit)
+        self.db.commit()
+
+        payload = {
+            "habit_id": habit.id,
+            "logged_value": 7,  # Above limit
+            "emotional_state": "Stressed",
+            "trigger_context": "Office"
+        }
+        response = self.client.post(
+            "/api/log/create",
+            data=json.dumps(payload),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 201)
+        data = json.loads(response.get_data(as_text=True))
+        self.assertEqual(data["log"]["severity"], "Slip")
+
+    # 10. Registration Validation Tests
+    def test_registration_duplicate_username_rejected(self):
+        """Verify that registering an existing username returns error redirect."""
+        from werkzeug.security import generate_password_hash
+        existing = User(username="ExistingUser", password_hash=generate_password_hash("pass123"))
+        self.db.add(existing)
+        self.db.commit()
+
+        payload = {"username": "ExistingUser", "password": "newpass123", "confirm_password": "newpass123"}
+        response = self.client.post("/register", data=payload)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/register", response.headers["Location"])
+
+    def test_registration_missing_password_rejected(self):
+        """Verify registration without password redirects back with error."""
+        payload = {"username": "NoPassUser", "password": "", "confirm_password": ""}
+        response = self.client.post("/register", data=payload)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/register", response.headers["Location"])
+
+    # 11. Growth Stage Model Unit Test
+    def test_growth_stage_calculation(self):
+        """Verify get_growth_stage() returns correct stage at each milestone."""
+        habit = Habit(user_id=self.test_user_id, name="Test", unit="x", daily_limit=1, successful_days=0)
+        self.db.add(habit); self.db.commit()
+        self.assertEqual(habit.get_growth_stage(), 1)  # Seed
+
+        habit.successful_days = 2
+        self.assertEqual(habit.get_growth_stage(), 2)  # Sprout
+
+        habit.successful_days = 5
+        self.assertEqual(habit.get_growth_stage(), 3)  # Sapling
+
+        habit.successful_days = 10
+        self.assertEqual(habit.get_growth_stage(), 4)  # Young Tree
+
+        habit.successful_days = 20
+        self.assertEqual(habit.get_growth_stage(), 5)  # Mature Tree
+
+        habit.successful_days = 35
+        self.assertEqual(habit.get_growth_stage(), 6)  # Blooming Tree
+
+    # 12. Logout Clears Session Test
+    def test_logout_clears_session(self):
+        """Verify that logout clears the user session and redirects to index."""
+        response = self.client.get("/logout")
+        self.assertEqual(response.status_code, 302)
+        # After logout, dashboard should redirect to index
+        dash_response = self.client.get("/dashboard")
+        self.assertEqual(dash_response.status_code, 302)
+        self.assertIn("/", dash_response.headers["Location"])
+
 
 if __name__ == "__main__":
     unittest.main()
+

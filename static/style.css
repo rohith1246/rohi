@@ -1003,3 +1003,20 @@ h1, h2, h3, h4 {
     box-shadow: var(--shadow-soft), var(--shadow-glow);
     border-color: var(--primary);
 }
+/* Skip Navigation Link for Screen Readers */
+.skip-link {
+    position: absolute;
+    top: -100px;
+    left: 0;
+    background: var(--accent);
+    color: var(--bg-app);
+    padding: 0.8rem 1.5rem;
+    font-weight: 700;
+    z-index: 1000;
+    transition: top 0.3s;
+    border-radius: 0 0 var(--radius-md) 0;
+}
+
+.skip-link:focus {
+    top: 0;
+}

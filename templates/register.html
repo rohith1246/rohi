@@ -13,7 +13,7 @@
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         {% for category, message in messages %}
-          <div class="alert-card" style="background-color: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); margin-bottom: 1.5rem; padding: 0.8rem 1.2rem;">
+          <div id="reg-error" class="alert-card" style="background-color: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); margin-bottom: 1.5rem; padding: 0.8rem 1.2rem;">
               <span class="alert-icon">⚠️</span>
               <div class="alert-content">
                   <h4 style="color: #ef4444;">Registration Error</h4>
@@ -22,27 +22,26 @@
           </div>
         {% endfor %}
       {% endif %}
-    {% endwith %}
-
     <form action="{{ url_for('register') }}" method="POST" class="auth-form" id="register-form">
         <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
         <div class="form-group">
             <label for="username-input">Nickname / Username</label>
-            <input type="text" id="username-input" name="username" placeholder="e.g. Rohith" required minlength="2" maxlength="30" autocomplete="username">
+            <input type="text" id="username-input" name="username" placeholder="e.g. Rohith" required aria-required="true" minlength="2" maxlength="30" autocomplete="username" {% if messages %}aria-describedby="reg-error"{% endif %}>
         </div>
 
         <div class="form-group" style="margin-top: 1rem;">
             <label for="password-input">Password</label>
-            <input type="password" id="password-input" name="password" placeholder="Min. 4 characters" required minlength="4">
+            <input type="password" id="password-input" name="password" placeholder="Min. 4 characters" required aria-required="true" minlength="4" autocomplete="new-password" {% if messages %}aria-describedby="reg-error"{% endif %}>
         </div>
 
         <div class="form-group" style="margin-top: 1rem;">
             <label for="confirm-password-input">Confirm Password</label>
-            <input type="password" id="confirm-password-input" name="confirm_password" placeholder="Confirm your password" required minlength="4">
+            <input type="password" id="confirm-password-input" name="confirm_password" placeholder="Confirm your password" required aria-required="true" minlength="4" autocomplete="new-password" {% if messages %}aria-describedby="reg-error"{% endif %}>
         </div>
 
         <button type="submit" class="btn-primary" style="margin-top: 2rem;">Plant Your Seed</button>
     </form>
+    {% endwith %}
 
     <p style="text-align: center; margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-muted);">
         Already have a profile? <a href="{{ url_for('login') }}" style="color: var(--accent); text-decoration: none; font-weight: 600;">Log in here</a>

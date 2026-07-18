@@ -6,7 +6,7 @@
 <section class="card-main coach-container">
     <div class="coach-header">
         <div style="display: flex; align-items: center; gap: 1rem;">
-            <span class="coach-avatar">💬</span>
+            <span class="coach-avatar" aria-hidden="true">💬</span>
             <div>
                 <h3>Rohi CBT Coach</h3>
                 <p style="font-size: 0.85rem; color: var(--text-muted);">Your adaptive cognitive behavioral companion.</p>
@@ -16,10 +16,10 @@
     </div>
 
     <!-- Chat Messages Window -->
-    <div class="chat-window" id="chat-window">
+    <div class="chat-window" id="chat-window" aria-live="assertive" role="log">
         {% if not chats %}
         <div class="chat-empty-state" id="chat-empty">
-            <span class="empty-emoji" style="font-size: 2.5rem;">🌱</span>
+            <span class="empty-emoji" style="font-size: 2.5rem;" aria-hidden="true">🌱</span>
             <h4>Start Your First Session</h4>
             <p style="color: var(--text-muted); font-size: 0.9rem; max-width: 400px; margin: 0.5rem auto 0;">
                 Rohi adapts its coaching methods based on your logs and emotions. Share how your day is going or what triggers you are experiencing.
@@ -51,7 +51,7 @@
 
     <!-- Chat Input Area -->
     <form id="chat-input-form" class="chat-input-area">
-        <input type="text" id="chat-message-field" placeholder="Share how you are feeling, what cravings you are fighting, or reflect on your day..." required autocomplete="off">
+        <input type="text" id="chat-message-field" placeholder="Share how you are feeling, what cravings you are fighting, or reflect on your day..." required autocomplete="off" aria-label="Chat message">
         <button type="submit" id="chat-send-btn" class="btn-primary">Send</button>
     </form>
 </section>
@@ -100,7 +100,8 @@
             const response = await fetch("/api/chat", {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "X-CSRF-Token": "{{ session.csrf_token }}"
                 },
                 body: JSON.stringify({ message: messageText })
             });

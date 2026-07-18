@@ -8,6 +8,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 from database import SessionLocal
 from models import User, Habit, Log, Chat, Nudge, init_db
+from typing import Any, Tuple, Optional, Dict
+from markupsafe import escape
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -19,9 +21,28 @@ load_dotenv()
 # Initialize Flask app
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "rohi-recovery-garden-secret-key-999")
+app.permanent_session_lifetime = datetime.timedelta(hours=2)
+
+# Simple in-memory rate limiter
+_rate_limits: dict = {}
+def rate_limit_check(key: str, max_requests: int = 10, window_seconds: int = 60) -> bool:
+    """Returns True if rate limit exceeded."""
+    import time
+    now = time.time()
+    if key not in _rate_limits:
+        _rate_limits[key] = []
+    _rate_limits[key] = [t for t in _rate_limits[key] if now - t < window_seconds]
+    if len(_rate_limits[key]) >= max_requests:
+        return True
+    _rate_limits[key].append(now)
+    return False
+
+def escape_html(text: Optional[str]) -> str:
+    """Escapes HTML characters from string to prevent XSS."""
+    return str(escape(text)) if text else ""
 
 @app.before_request
-def csrf_protect():
+def csrf_protect() -> Any:
     """Validates session-based CSRF tokens on all state-changing requests."""
     # Ensure session token is initialized on GET requests
     if "csrf_token" not in session:
@@ -47,7 +68,7 @@ def csrf_protect():
             return jsonify({"error": "Security validation failed. CSRF token missing or invalid."}), 400
 
 @app.after_request
-def add_security_headers(response):
+def add_security_headers(response: Any) -> Any:
     """Enforces secure security HTTP headers on all outgoing responses."""
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-Content-Type-Options"] = "nosniff"
@@ -70,7 +91,7 @@ except Exception as e:
     logger.error(f"Error during schema initialization: {e}")
 
 # Helper for AI model execution
-def run_ai_generation(prompt, response_type="text"):
+def run_ai_generation(prompt: str, response_type: str = "text") -> Tuple[str, str]:
     """Orchestrates Gemini API with standard REST fallback to Groq API."""
     gemini_key = os.getenv("GEMINI_API_KEY")
     groq_key = os.getenv("GROQ_API_KEY")
@@ -138,22 +159,26 @@ def run_ai_generation(prompt, response_type="text"):
 # ----------------- UI Routes -----------------
 
 @app.route("/")
-def index():
+def index() -> Any:
     """Profile selection landing page."""
     return render_template("index.html")
 
 @app.route("/register", methods=["GET", "POST"])
-def register():
+def register() -> Any:
     """Handles new user profile registration with password hashing."""
     if request.method == "GET":
         return render_template("register.html")
         
-    username = request.form.get("username", "").strip()
+    username = escape_html(request.form.get("username", "").strip())
     password = request.form.get("password", "")
     confirm_password = request.form.get("confirm_password", "")
     
     if not username or not password:
         flash("Username and password are required.")
+        return redirect(url_for("register"))
+        
+    if len(password) < 6 or not password.strip():
+        flash("Password must be at least 6 characters long and cannot be just spaces.")
         return redirect(url_for("register"))
         
     if password != confirm_password:
@@ -175,6 +200,7 @@ def register():
         
         session["user_id"] = new_user.id
         session["username"] = new_user.username
+        session.permanent = True
         logger.info(f"Registered new secure user: {username}")
         return redirect(url_for("dashboard"))
     except Exception as e:
@@ -186,12 +212,12 @@ def register():
         db.close()
 
 @app.route("/login", methods=["GET", "POST"])
-def login():
+def login() -> Any:
     """Handles secure user profile login, with legacy migration for passwordless test users."""
     if request.method == "GET":
         return render_template("login.html")
         
-    username = request.form.get("username", "").strip()
+    username = escape_html(request.form.get("username", "").strip())
     password = request.form.get("password", "")
     
     if not username or not password:
@@ -216,6 +242,7 @@ def login():
             
         session["user_id"] = user.id
         session["username"] = user.username
+        session.permanent = True
         logger.info(f"Secure login successful for user: {username}")
         return redirect(url_for("dashboard"))
     except Exception as e:
@@ -226,13 +253,13 @@ def login():
         db.close()
 
 @app.route("/logout")
-def logout():
+def logout() -> Any:
     """Clears user session."""
     session.clear()
     return redirect(url_for("index"))
 
 @app.route("/dashboard")
-def dashboard():
+def dashboard() -> Any:
     """Main application dashboard."""
     if "user_id" not in session:
         return redirect(url_for("index"))
@@ -289,7 +316,7 @@ def dashboard():
         db.close()
 
 @app.route("/coach")
-def coach():
+def coach() -> Any:
     """CBT Adaptive AI coach page."""
     if "user_id" not in session:
         return redirect(url_for("index"))
@@ -302,7 +329,7 @@ def coach():
         db.close()
 
 @app.route("/emergency")
-def emergency():
+def emergency() -> Any:
     """Urge Surfing emergency assistance portal."""
     if "user_id" not in session:
         return redirect(url_for("index"))
@@ -317,14 +344,14 @@ def emergency():
 # ----------------- API Endpoints -----------------
 
 @app.route("/api/habit/create", methods=["POST"])
-def create_habit():
+def create_habit() -> Any:
     """Adds a new habit to the user's recovery garden."""
     if "user_id" not in session:
         return jsonify({"error": "Unauthorized"}), 401
         
     data = request.get_json()
-    name = data.get("name", "").strip()
-    unit = data.get("unit", "").strip()
+    name = escape_html(data.get("name", "").strip())
+    unit = escape_html(data.get("unit", "").strip())
     daily_limit = data.get("daily_limit")
 
     if not name or not unit or daily_limit is None:
@@ -363,7 +390,7 @@ def create_habit():
         db.close()
 
 @app.route("/api/log/create", methods=["POST"])
-def create_log():
+def create_log() -> Any:
     """Logs daily progress, evaluating slips and updating virtual recovery garden growth."""
     if "user_id" not in session:
         return jsonify({"error": "Unauthorized"}), 401
@@ -371,8 +398,8 @@ def create_log():
     data = request.get_json()
     habit_id = data.get("habit_id")
     logged_value = data.get("logged_value")
-    emotional_state = data.get("emotional_state", "").strip()
-    trigger_context = data.get("trigger_context", "").strip()
+    emotional_state = escape_html(data.get("emotional_state", "").strip())
+    trigger_context = escape_html(data.get("trigger_context", "").strip())
 
     if habit_id is None or logged_value is None:
         return jsonify({"error": "Missing parameters."}), 400
@@ -441,13 +468,16 @@ def create_log():
         db.close()
 
 @app.route("/api/chat", methods=["POST"])
-def chat_coaching():
+def chat_coaching() -> Any:
     """Converses with CBT AI therapist, adapting tone dynamically based on logging history."""
+    if rate_limit_check(f"ai_{session.get('user_id')}"):
+        return jsonify({"error": "Rate limit exceeded. Please wait a moment."}), 429
+
     if "user_id" not in session:
         return jsonify({"error": "Unauthorized"}), 401
 
     data = request.get_json()
-    user_message = data.get("message", "").strip()
+    user_message = escape_html(data.get("message", "").strip())
     if not user_message:
         return jsonify({"error": "Message is empty."}), 400
 
@@ -509,7 +539,12 @@ Do not output JSON. Do not include model intro/outro conversation. Just output t
 """
 
         # Call AI
-        ai_reply, provider = run_ai_generation(prompt, response_type="text")
+        try:
+            ai_reply, provider = run_ai_generation(prompt, response_type="text")
+        except Exception as ai_err:
+            logger.error(f"AI generation error: {ai_err}")
+            ai_reply = "I'm having a little trouble connecting to my cognitive pathways right now, but I'm here for you. Take a deep breath and try again shortly."
+            provider = "fallback"
 
         # Save AI reply to database
         coach_chat = Chat(user_id=user.id, sender="coach", message=ai_reply, detected_sentiment=tone)
@@ -527,8 +562,11 @@ Do not output JSON. Do not include model intro/outro conversation. Just output t
         db.close()
 
 @app.route("/api/nudge", methods=["GET"])
-def get_nudge():
+def get_nudge() -> Any:
     """Generates today's personalized AI recovery nudge, analyzing habits and logged triggers."""
+    if rate_limit_check(f"ai_{session.get('user_id')}"):
+        return jsonify({"error": "Rate limit exceeded. Please wait a moment."}), 429
+
     if "user_id" not in session:
         return jsonify({"error": "Unauthorized"}), 401
 
@@ -590,14 +628,17 @@ Output ONLY the nudge text. Do not wrap it in quotes. No conversation.
         db.close()
 
 @app.route("/api/emergency/intervention", methods=["POST"])
-def emergency_intervention():
+def emergency_intervention() -> Any:
     """Generates an immediate urge surfing mindfulness intervention plan tailored to user triggers."""
+    if rate_limit_check(f"ai_{session.get('user_id')}"):
+        return jsonify({"error": "Rate limit exceeded. Please wait a moment."}), 429
+
     if "user_id" not in session:
         return jsonify({"error": "Unauthorized"}), 401
 
     data = request.get_json()
     habit_id = data.get("habit_id")
-    trigger_desc = data.get("trigger", "").strip()
+    trigger_desc = escape_html(data.get("trigger", "").strip())
 
     if not habit_id or not trigger_desc:
         return jsonify({"error": "Missing parameters."}), 400
@@ -621,7 +662,13 @@ Include:
 Keep the content clear, directive, and direct. Output ONLY the response plan in clean Markdown list items. Do not use JSON.
 """
 
-        intervention_text, provider = run_ai_generation(prompt, response_type="text")
+        try:
+            intervention_text, provider = run_ai_generation(prompt, response_type="text")
+        except Exception as ai_err:
+            logger.error(f"AI generation failed: {ai_err}")
+            intervention_text = "- **Action**: Splash cold water on your face right now.\n- **Reframing**: 'This is just a feeling, it doesn't control me.'\n- **Surfing**: Close your eyes and breathe deeply for 60 seconds."
+            provider = "fallback"
+            
         return jsonify({
             "intervention": intervention_text,
             "provider": provider

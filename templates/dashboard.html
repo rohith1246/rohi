@@ -7,7 +7,7 @@
     <!-- Left Column: Nudges, Log Activity, Garden Grid -->
     <div class="dashboard-main">
         <!-- AI Intelligent Nudge Banner -->
-        <section class="nudge-section alert-card" id="nudge-banner" aria-live="polite">
+        <section class="nudge-section alert-card" id="nudge-banner" aria-live="polite" role="status">
             <div class="alert-icon">🧠</div>
             <div class="alert-content">
                 <h4>Today's AI Recovery Nudge</h4>
@@ -34,7 +34,7 @@
                 <p>Your garden is currently empty. Add a habit in the sidebar to plant your first tree!</p>
             </div>
             {% else %}
-            <div class="garden-grid" id="garden-grid">
+            <div class="garden-grid" id="garden-grid" aria-live="polite">
                 {% for habit in habits %}
                 {% set status = habit_statuses[habit.id] %}
                 {% set stage = habit.get_growth_stage() %}
@@ -156,26 +156,28 @@
             <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.2rem;">Record your numbers to feed your recovery garden.</p>
 
             <form id="form-log-activity">
-                <div class="form-group">
-                    <label for="log-select-habit">Select Habit</label>
-                    <select id="log-select-habit" name="habit_id" required>
-                        <option value="" disabled selected>Select habit</option>
+                <fieldset style="border: none; padding: 0; margin: 0;">
+                    <legend style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0;">Log Daily Activity Form</legend>
+                    <div class="form-group">
+                        <label for="log-select-habit">Select Habit</label>
+                        <select id="log-select-habit" name="habit_id" aria-label="Select Habit" required>
+                            <option value="" disabled selected>Select habit</option>
                         {% for h in habits %}
                         <option value="{{ h.id }}">{{ h.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
 
-                <div class="form-grid-log" style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 0.8rem; margin-top: 1rem;">
-                    <div class="form-group">
-                        <label for="log-value">Amount</label>
-                        <input type="number" id="log-value" name="logged_value" min="0" placeholder="e.g. 30" required>
-                    </div>
+                    <div class="form-grid-log" style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 0.8rem; margin-top: 1rem;">
+                        <div class="form-group">
+                            <label for="log-value">Amount</label>
+                            <input type="number" id="log-value" name="logged_value" min="0" placeholder="e.g. 30" aria-label="Log Value Amount" required>
+                        </div>
 
-                    <div class="form-group">
-                        <label for="log-emotion">Emotional State</label>
-                        <select id="log-emotion" name="emotional_state">
-                            <option value="" disabled selected>How do you feel?</option>
+                        <div class="form-group">
+                            <label for="log-emotion">Emotional State</label>
+                            <select id="log-emotion" name="emotional_state" aria-label="Emotional State">
+                                <option value="" disabled selected>How do you feel?</option>
                             <option value="Calm">Calm / Peaceful</option>
                             <option value="Bored">Bored / Restless</option>
                             <option value="Stressed">Stressed / Overwhelmed</option>
@@ -184,12 +186,13 @@
                             <option value="Triggered">Triggered / Craving</option>
                         </select>
                     </div>
-                </div>
+                    </div>
 
-                <div class="form-group" style="margin-top: 1rem;">
-                    <label for="log-context">Trigger Context / Notes</label>
-                    <textarea id="log-context" name="trigger_context" rows="2" placeholder="e.g., Bored at 8 PM, opened social media apps out of habit."></textarea>
-                </div>
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label for="log-context">Trigger Context / Notes</label>
+                        <textarea id="log-context" name="trigger_context" rows="2" aria-label="Trigger Context Notes" placeholder="e.g., Bored at 8 PM, opened social media apps out of habit."></textarea>
+                    </div>
+                </fieldset>
 
                 <button type="submit" id="btn-log-submit" class="btn-primary" style="margin-top: 1.5rem;" {% if not habits %}disabled{% endif %}>Log & Update Garden</button>
             </form>
@@ -201,22 +204,25 @@
             <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.2rem;">Plant a new seed in your Recovery Garden.</p>
 
             <form id="form-create-habit">
-                <div class="form-group">
-                    <label for="habit-name">Habit Name</label>
-                    <input type="text" id="habit-name" name="name" placeholder="e.g. Screen Time, Smoking" required max="100">
-                </div>
-
-                <div class="form-grid-log" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-top: 1rem;">
+                <fieldset style="border: none; padding: 0; margin: 0;">
+                    <legend style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0;">Plant New Habit Form</legend>
                     <div class="form-group">
-                        <label for="habit-unit">Unit</label>
-                        <input type="text" id="habit-unit" name="unit" placeholder="e.g. minutes, cigs" required max="40">
+                        <label for="habit-name">Habit Name</label>
+                        <input type="text" id="habit-name" name="name" placeholder="e.g. Screen Time, Smoking" aria-label="Habit Name" required max="100">
                     </div>
 
-                    <div class="form-group">
-                        <label for="habit-limit">Daily Limit</label>
-                        <input type="number" id="habit-limit" name="daily_limit" min="0" placeholder="e.g. 60" required>
+                    <div class="form-grid-log" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-top: 1rem;">
+                        <div class="form-group">
+                            <label for="habit-unit">Unit</label>
+                            <input type="text" id="habit-unit" name="unit" placeholder="e.g. minutes, cigs" aria-label="Habit Unit" required max="40">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="habit-limit">Daily Limit</label>
+                            <input type="number" id="habit-limit" name="daily_limit" min="0" placeholder="e.g. 60" aria-label="Daily Limit" required>
+                        </div>
                     </div>
-                </div>
+                </fieldset>
 
                 <button type="submit" id="btn-create-submit" class="btn-secondary" style="margin-top: 1.5rem; width: 100%;">Plant Seed</button>
             </form>
