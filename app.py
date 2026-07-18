@@ -452,7 +452,10 @@ def create_log() -> Any:
                 habit.last_success_date = today
                 logger.info(f"Tree for habit '{habit.name}' grew! Successful days: {habit.successful_days}")
         else:
-            # Bad day (Slip): Pauses growth. Success count is unaffected, last_success_date is NOT updated.
+            # Bad day (Slip): Pauses growth. If they previously logged success today, revert it.
+            if habit.last_success_date == today:
+                habit.successful_days = max(0, habit.successful_days - 1)
+                habit.last_success_date = datetime.date(2000, 1, 1)
             logger.info(f"Tree for habit '{habit.name}' paused at {habit.successful_days} days due to Slip.")
 
         db.commit()
