@@ -25,6 +25,7 @@
     {% endwith %}
 
     <form action="{{ url_for('login') }}" method="POST" class="auth-form">
+        <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
         <div class="form-group">
             <label for="username-input">Nickname</label>
             <input type="text" id="username-input" name="username" placeholder="e.g. Rohith" required minlength="2" maxlength="30" autocomplete="username">

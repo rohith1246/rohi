@@ -1,4 +1,4 @@
-import os
+import os, secrets
 import json
 import logging
 import datetime
@@ -19,6 +19,47 @@ load_dotenv()
 # Initialize Flask app
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "rohi-recovery-garden-secret-key-999")
+
+@app.before_request
+def csrf_protect():
+    """Validates session-based CSRF tokens on all state-changing requests."""
+    # Ensure session token is initialized on GET requests
+    if "csrf_token" not in session:
+        session["csrf_token"] = secrets.token_hex(32)
+        
+    # Skip checks in testing environments
+    if app.config.get("TESTING"):
+        return
+        
+    # Enforce checks on all mutating methods
+    if request.method in ["POST", "PUT", "DELETE", "PATCH"]:
+        token = request.form.get("csrf_token") or request.headers.get("X-CSRF-Token")
+        
+        # Check JSON payloads if header is missing
+        if not token and request.is_json:
+            try:
+                token = request.get_json().get("csrf_token")
+            except Exception:
+                pass
+                
+        if not token or token != session.get("csrf_token"):
+            logger.warning(f"CSRF authentication failure for path: {request.path}")
+            return jsonify({"error": "Security validation failed. CSRF token missing or invalid."}), 400
+
+@app.after_request
+def add_security_headers(response):
+    """Enforces secure security HTTP headers on all outgoing responses."""
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self' https:; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data: https:; "
+        "script-src 'self' 'unsafe-inline';"
+    )
+    return response
 
 # Initialize database tables
 try:
@@ -420,7 +461,8 @@ def chat_coaching():
         db.commit()
 
         # Retrieve recent logs to provide context for AI adaptive tone adjustment
-        recent_logs = db.query(Log).filter(Log.user_id == user.id).order_by(Log.created_at.desc()).limit(5).all()
+        from sqlalchemy.orm import joinedload
+        recent_logs = db.query(Log).options(joinedload(Log.habit)).filter(Log.user_id == user.id).order_by(Log.created_at.desc()).limit(5).all()
         log_summary = []
         emotional_states = []
         slips_logged = 0
@@ -505,7 +547,8 @@ def get_nudge():
 
         # Generate a new nudge using historical logs
         user = db.query(User).filter(User.id == session["user_id"]).first()
-        logs = db.query(Log).filter(Log.user_id == user.id).order_by(Log.created_at.desc()).limit(15).all()
+        from sqlalchemy.orm import joinedload
+        logs = db.query(Log).options(joinedload(Log.habit)).filter(Log.user_id == user.id).order_by(Log.created_at.desc()).limit(15).all()
         
         log_data = []
         for l in logs:

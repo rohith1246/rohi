@@ -1,6 +1,9 @@
 // Aura Recovery Garden - Global JS Helper
 
 document.addEventListener("DOMContentLoaded", () => {
+    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    const csrfToken = csrfMeta ? csrfMeta.getAttribute("content") : "";
+
     // 1. Plant Habit Form Interceptor
     const formCreateHabit = document.getElementById("form-create-habit");
     if (formCreateHabit) {
@@ -18,7 +21,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 const response = await fetch("/api/habit/create", {
                     method: "POST",
                     headers: {
-                        "Content-Type": "application/json"
+                        "Content-Type": "application/json",
+                        "X-CSRF-Token": csrfToken
                     },
                     body: JSON.stringify({
                         name: name,
@@ -62,7 +66,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 const response = await fetch("/api/log/create", {
                     method: "POST",
                     headers: {
-                        "Content-Type": "application/json"
+                        "Content-Type": "application/json",
+                        "X-CSRF-Token": csrfToken
                     },
                     body: JSON.stringify({
                         habit_id: habitId,

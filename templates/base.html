@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Aura: A GenAI-powered recovery assistant utilizing Cognitive Behavioral Therapy (CBT), urge surfing tools, and virtual gardens to break bad habits.">
+    <meta name="csrf-token" content="{{ session.csrf_token }}">
     <title>{% block title %}Rohi - Break Bad Habits & Recovery Garden{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>

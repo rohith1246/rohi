@@ -203,6 +203,40 @@ class RohiTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn("/login", response.headers["Location"])
 
+    # 5. Security & Headers Parameter Tests
+    def test_security_headers_present(self):
+        """Verify that essential security HTTP headers are present on responses."""
+        response = self.client.get("/")
+        self.assertEqual(response.headers.get("X-Frame-Options"), "DENY")
+        self.assertEqual(response.headers.get("X-Content-Type-Options"), "nosniff")
+        self.assertEqual(response.headers.get("X-XSS-Protection"), "1; mode=block")
+        self.assertIn("Content-Security-Policy", response.headers)
+
+    def test_csrf_validation_enforced(self):
+        """Verify that mutations are blocked when CSRF token is missing and TESTING mode is disabled."""
+        # Temporarily enable CSRF protection by toggling TESTING config flag
+        app.config["TESTING"] = False
+        try:
+            payload = {
+                "name": "Testing CSRF",
+                "unit": "counts",
+                "daily_limit": 10
+            }
+            # No X-CSRF-Token or csrf_token parameter in payload
+            response = self.client.post(
+                "/api/habit/create",
+                data=json.dumps(payload),
+                content_type="application/json"
+            )
+            # Should block with 400 Bad Request
+            self.assertEqual(response.status_code, 400)
+            data = json.loads(response.get_data(as_text=True))
+            self.assertIn("error", data)
+            self.assertIn("Security validation failed", data["error"])
+        finally:
+            # Restore testing mode state
+            app.config["TESTING"] = True
+
 
 if __name__ == "__main__":
     unittest.main()
