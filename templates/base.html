@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Aura: A GenAI-powered recovery assistant utilizing Cognitive Behavioral Therapy (CBT), urge surfing tools, and virtual gardens to break bad habits.">
+    <title>{% block title %}Rohi - Break Bad Habits & Recovery Garden{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Main Sticky Header -->
+        <header class="app-header">
+            <div class="header-logo">
+                <span class="logo-emoji">🌳</span>
+                <h1>Rohi</h1>
+            </div>
+            {% if session.username %}
+            <div class="user-badge-header">
+                <span>Companion: <strong>{{ session.username }}</strong></span>
+            </div>
+            {% endif %}
+        </header>
+
+        <!-- Navigation Bar -->
+        {% if session.username %}
+        <nav class="nav-bar" aria-label="Main Navigation">
+            <a href="{{ url_for('dashboard') }}" class="btn-nav {% if request.path == '/dashboard' %}active{% endif %}" id="nav-dash">
+                <span class="nav-icon">📊</span> Garden & Logs
+            </a>
+            <a href="{{ url_for('coach') }}" class="btn-nav {% if request.path == '/coach' %}active{% endif %}" id="nav-coach">
+                <span class="nav-icon">💬</span> AI Coach
+            </a>
+            <a href="{{ url_for('emergency') }}" class="btn-nav {% if request.path == '/emergency' %}active{% endif %}" id="nav-emergency">
+                <span class="nav-icon">🚨</span> Craving Support
+            </a>
+            <a href="{{ url_for('logout') }}" class="btn-nav btn-logout" id="nav-logout">
+                <span class="nav-icon">🚪</span> Leave
+            </a>
+        </nav>
+        {% endif %}
+
+        <!-- Content Area -->
+        <main id="main-content" class="main-content">
+            {% block content %}
+            <!-- Default Landing / Profile Selection -->
+            <section class="auth-card">
+                <div class="auth-header">
+                    <h2>Welcome to Aura</h2>
+                    <p>Enter your nickname to access your recovery garden and CBT companion.</p>
+                </div>
+
+                <form action="{{ url_for('set_user') }}" method="POST" class="auth-form">
+                    <div class="form-group">
+                        <label for="username-input">Enter Nickname</label>
+                        <input type="text" id="username-input" name="username" placeholder="e.g. Rohith" required minlength="2" maxlength="30" autocomplete="off">
+                    </div>
+
+                    {% if users %}
+                    <div class="form-group" style="margin-top: 1.5rem;">
+                        <label for="username-select">Or Resume Profile</label>
+                        <select id="username-select" onchange="document.getElementById('username-input').value = this.value">
+                            <option value="" selected disabled>Select profile</option>
+                            {% for u in users %}
+                            <option value="{{ u.username }}">{{ u.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+
+                    <button type="submit" class="btn-primary" style="margin-top: 2rem;">Enter Recovery Space</button>
+                </form>
+            </section>
+            {% endblock %}
+        </main>
+
+        <footer class="app-footer">
+            <p>Rohi &copy; 2026. Designed with mindfulness and cognitive behavioral coaching.</p>
+        </footer>
+    </div>
+
+    <!-- Main scripts helper -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

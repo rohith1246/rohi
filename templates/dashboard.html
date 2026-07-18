@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Rohi Recovery Garden{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid">
+    <!-- Left Column: Nudges, Log Activity, Garden Grid -->
+    <div class="dashboard-main">
+        <!-- AI Intelligent Nudge Banner -->
+        <section class="nudge-section alert-card" id="nudge-banner" aria-live="polite">
+            <div class="alert-icon">🧠</div>
+            <div class="alert-content">
+                <h4>Today's AI Recovery Nudge</h4>
+                <p id="nudge-text">
+                    {% if nudge_content %}
+                        {{ nudge_content }}
+                    {% else %}
+                        Watering your garden with mindfulness... Loading daily nudge.
+                    {% endif %}
+                </p>
+            </div>
+        </section>
+
+        <!-- The Recovery Garden -->
+        <section class="garden-section card-main">
+            <h3 class="section-title">Your Recovery Garden</h3>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+                Each habit grows a unique tree. Success expands their branches. Slips pause growth without erasing progress.
+            </p>
+
+            {% if not habits %}
+            <div class="empty-garden">
+                <span class="empty-emoji">🪴</span>
+                <p>Your garden is currently empty. Add a habit in the sidebar to plant your first tree!</p>
+            </div>
+            {% else %}
+            <div class="garden-grid" id="garden-grid">
+                {% for habit in habits %}
+                {% set status = habit_statuses[habit.id] %}
+                {% set stage = habit.get_growth_stage() %}
+                <div class="garden-plot {% if status.severity == 'Slip' %}paused-plot{% endif %}" id="plot-{{ habit.id }}">
+                    <div class="plot-header">
+                        <h4>{{ habit.name }}</h4>
+                        <!-- Status Badges -->
+                        {% if status.logged %}
+                            {% if status.severity == 'Slip' %}
+                                <span class="badge badge-paused">Growth Paused</span>
+                            {% elif status.severity == 'Struggle' %}
+                                <span class="badge badge-struggle">Struggling (Growing)</span>
+                            {% else %}
+                                <span class="badge badge-active">Growing</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="badge badge-pending">Needs Water</span>
+                        {% endif %}
+                    </div>
+
+                    <!-- SVG Dynamic Tree Rendering -->
+                    <div class="tree-container">
+                        {% if stage == 1 %}
+                        <!-- Stage 1: Seed / Soil -->
+                        <svg viewBox="0 0 100 100" class="tree-svg" aria-label="Seed Stage">
+                            <path d="M 20 85 Q 50 70 80 85 Z" fill="#4d3222" />
+                            <circle cx="50" cy="72" r="3.5" fill="#8bc34a" />
+                        </svg>
+                        {% elif stage == 2 %}
+                        <!-- Stage 2: Sprout -->
+                        <svg viewBox="0 0 100 100" class="tree-svg {% if status.severity != 'Slip' %}sway-anim{% endif %}" aria-label="Sprout Stage">
+                            <path d="M 20 85 Q 50 70 80 85 Z" fill="#4d3222" />
+                            <path d="M 50 75 Q 50 60 58 50" stroke="#8bc34a" stroke-width="4.5" fill="none" stroke-linecap="round" />
+                            <path d="M 58 50 Q 65 48 68 53 Q 63 58 58 50" fill="#8bc34a" />
+                        </svg>
+                        {% elif stage == 3 %}
+                        <!-- Stage 3: Sapling -->
+                        <svg viewBox="0 0 100 100" class="tree-svg {% if status.severity != 'Slip' %}sway-anim{% endif %}" aria-label="Sapling Stage">
+                            <path d="M 20 85 Q 50 70 80 85 Z" fill="#4d3222" />
+                            <path d="M 50 75 Q 50 45 42 35" stroke="#795548" stroke-width="4" fill="none" stroke-linecap="round" />
+                            <path d="M 48 58 Q 58 50 60 42" stroke="#795548" stroke-width="3" fill="none" stroke-linecap="round" />
+                            <!-- Leaves -->
+                            <circle cx="42" cy="35" r="7" fill="#4caf50" />
+                            <circle cx="60" cy="42" r="6" fill="#4caf50" />
+                            <circle cx="48" cy="50" r="5" fill="#8bc34a" />
+                        </svg>
+                        {% elif stage == 4 %}
+                        <!-- Stage 4: Young Tree -->
+                        <svg viewBox="0 0 100 100" class="tree-svg {% if status.severity != 'Slip' %}sway-anim{% endif %}" aria-label="Young Tree Stage">
+                            <path d="M 20 85 Q 50 70 80 85 Z" fill="#4d3222" />
+                            <path d="M 50 75 L 50 35" stroke="#5d4037" stroke-width="6.5" stroke-linecap="round" />
+                            <path d="M 50 55 Q 35 45 30 35" stroke="#5d4037" stroke-width="4" stroke-linecap="round" fill="none" />
+                            <path d="M 50 45 Q 65 35 70 25" stroke="#5d4037" stroke-width="4" stroke-linecap="round" fill="none" />
+                            <!-- Canopies -->
+                            <circle cx="30" cy="35" r="12" fill="#2e7d32" opacity="0.9" />
+                            <circle cx="50" cy="30" r="15" fill="#388e3c" opacity="0.95" />
+                            <circle cx="70" cy="25" r="12" fill="#4caf50" opacity="0.9" />
+                        </svg>
+                        {% elif stage == 5 %}
+                        <!-- Stage 5: Mature Tree -->
+                        <svg viewBox="0 0 100 100" class="tree-svg {% if status.severity != 'Slip' %}sway-anim{% endif %}" aria-label="Mature Tree Stage">
+                            <path d="M 15 85 Q 50 70 85 85 Z" fill="#3e2723" />
+                            <path d="M 46 80 L 46 35 L 54 35 L 54 80 Z" fill="#5d4037" />
+                            <path d="M 46 50 Q 25 35 22 25" stroke="#5d4037" stroke-width="5" stroke-linecap="round" fill="none" />
+                            <path d="M 54 45 Q 75 30 78 20" stroke="#5d4037" stroke-width="5" stroke-linecap="round" fill="none" />
+                            <!-- Canopy -->
+                            <circle cx="50" cy="25" r="22" fill="#1b5e20" />
+                            <circle cx="30" cy="30" r="16" fill="#2e7d32" />
+                            <circle cx="70" cy="25" r="16" fill="#388e3c" />
+                            <circle cx="50" cy="15" r="15" fill="#4caf50" />
+                        </svg>
+                        {% elif stage == 6 %}
+                        <!-- Stage 6: Blooming Tree -->
+                        <svg viewBox="0 0 100 100" class="tree-svg {% if status.severity != 'Slip' %}sway-anim{% endif %}" aria-label="Blooming Tree Stage">
+                            <path d="M 15 85 Q 50 70 85 85 Z" fill="#3e2723" />
+                            <path d="M 46 80 L 46 35 L 54 35 L 54 80 Z" fill="#5d4037" />
+                            <path d="M 46 50 Q 25 35 22 25" stroke="#5d4037" stroke-width="5" stroke-linecap="round" fill="none" />
+                            <path d="M 54 45 Q 75 30 78 20" stroke="#5d4037" stroke-width="5" stroke-linecap="round" fill="none" />
+                            <!-- Canopy -->
+                            <circle cx="50" cy="25" r="22" fill="#1b5e20" />
+                            <circle cx="30" cy="30" r="16" fill="#2e7d32" />
+                            <circle cx="70" cy="25" r="16" fill="#388e3c" />
+                            <!-- Blossoms -->
+                            <circle cx="50" cy="25" r="4.5" fill="#ff80ab" />
+                            <circle cx="45" cy="15" r="3.5" fill="#ff4081" />
+                            <circle cx="35" cy="32" r="3.5" fill="#ff80ab" />
+                            <circle cx="65" cy="28" r="4.5" fill="#ff4081" />
+                            <circle cx="72" cy="20" r="3.5" fill="#ff80ab" />
+                            <circle cx="55" cy="35" r="3.5" fill="#ff4081" />
+                        </svg>
+                        {% endif %}
+                    </div>
+
+                    <!-- Plot Meta Stats -->
+                    <div class="plot-footer">
+                        <div class="plot-progress">
+                            <span class="progress-count">🌳 <strong>{{ habit.successful_days }}</strong> Success Days</span>
+                            <span class="progress-stage">Stage {{ stage }}/6</span>
+                        </div>
+                        <div class="plot-limit">
+                            <span>Target: Max <strong>{{ habit.daily_limit }} {{ habit.unit }}</strong></span>
+                            {% if status.logged %}
+                            <span class="today-log">Today: <strong>{{ status.value }} {{ habit.unit }}</strong></span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </section>
+    </div>
+
+    <!-- Right Column: Habit Creation and Daily Log Activity Form -->
+    <aside class="dashboard-sidebar">
+        <!-- Log Daily Value Form -->
+        <section class="card-main">
+            <h3>Log Daily Activity</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.2rem;">Record your numbers to feed your recovery garden.</p>
+
+            <form id="form-log-activity">
+                <div class="form-group">
+                    <label for="log-select-habit">Select Habit</label>
+                    <select id="log-select-habit" name="habit_id" required>
+                        <option value="" disabled selected>Select habit</option>
+                        {% for h in habits %}
+                        <option value="{{ h.id }}">{{ h.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-grid-log" style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 0.8rem; margin-top: 1rem;">
+                    <div class="form-group">
+                        <label for="log-value">Amount</label>
+                        <input type="number" id="log-value" name="logged_value" min="0" placeholder="e.g. 30" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="log-emotion">Emotional State</label>
+                        <select id="log-emotion" name="emotional_state">
+                            <option value="" disabled selected>How do you feel?</option>
+                            <option value="Calm">Calm / Peaceful</option>
+                            <option value="Bored">Bored / Restless</option>
+                            <option value="Stressed">Stressed / Overwhelmed</option>
+                            <option value="Anxious">Anxious / Worried</option>
+                            <option value="Fatigued">Tired / Fatigued</option>
+                            <option value="Triggered">Triggered / Craving</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label for="log-context">Trigger Context / Notes</label>
+                    <textarea id="log-context" name="trigger_context" rows="2" placeholder="e.g., Bored at 8 PM, opened social media apps out of habit."></textarea>
+                </div>
+
+                <button type="submit" id="btn-log-submit" class="btn-primary" style="margin-top: 1.5rem;" {% if not habits %}disabled{% endif %}>Log & Update Garden</button>
+            </form>
+        </section>
+
+        <!-- Plant New Habit Form -->
+        <section class="card-main" style="margin-top: 1.5rem;">
+            <h3>Plant New Habit</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.2rem;">Plant a new seed in your Recovery Garden.</p>
+
+            <form id="form-create-habit">
+                <div class="form-group">
+                    <label for="habit-name">Habit Name</label>
+                    <input type="text" id="habit-name" name="name" placeholder="e.g. Screen Time, Smoking" required max="100">
+                </div>
+
+                <div class="form-grid-log" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-top: 1rem;">
+                    <div class="form-group">
+                        <label for="habit-unit">Unit</label>
+                        <input type="text" id="habit-unit" name="unit" placeholder="e.g. minutes, cigs" required max="40">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="habit-limit">Daily Limit</label>
+                        <input type="number" id="habit-limit" name="daily_limit" min="0" placeholder="e.g. 60" required>
+                    </div>
+                </div>
+
+                <button type="submit" id="btn-create-submit" class="btn-secondary" style="margin-top: 1.5rem; width: 100%;">Plant Seed</button>
+            </form>
+        </section>
+    </aside>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Fetch today's AI Recovery Nudge if not loaded
+    document.addEventListener("DOMContentLoaded", async () => {
+        const nudgeTextEl = document.getElementById("nudge-text");
+        if (nudgeTextEl.textContent.trim().includes("Watering your garden")) {
+            try {
+                const res = await fetch("/api/nudge");
+                const data = await res.json();
+                nudgeTextEl.textContent = data.nudge;
+            } catch (err) {
+                console.error("Nudge generation failed: ", err);
+                nudgeTextEl.textContent = "Feed your Recovery Garden with self-compassion today. Every small action builds resilience.";
+            }
+        }
+    });
+</script>
+{% endblock %}

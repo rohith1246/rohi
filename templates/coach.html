@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}AI Recovery Coach - Rohi{% endblock %}
+
+{% block content %}
+<section class="card-main coach-container">
+    <div class="coach-header">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <span class="coach-avatar">💬</span>
+            <div>
+                <h3>Rohi CBT Coach</h3>
+                <p style="font-size: 0.85rem; color: var(--text-muted);">Your adaptive cognitive behavioral companion.</p>
+            </div>
+        </div>
+        <div id="ai-active-indicator" class="provider-badge" style="display: none;">active</div>
+    </div>
+
+    <!-- Chat Messages Window -->
+    <div class="chat-window" id="chat-window">
+        {% if not chats %}
+        <div class="chat-empty-state" id="chat-empty">
+            <span class="empty-emoji" style="font-size: 2.5rem;">🌱</span>
+            <h4>Start Your First Session</h4>
+            <p style="color: var(--text-muted); font-size: 0.9rem; max-width: 400px; margin: 0.5rem auto 0;">
+                Rohi adapts its coaching methods based on your logs and emotions. Share how your day is going or what triggers you are experiencing.
+            </p>
+        </div>
+        {% else %}
+            {% for chat in chats %}
+            <div class="chat-bubble {{ chat.sender }}-bubble">
+                <div class="bubble-sender">
+                    {% if chat.sender == 'user' %}You{% else %}Rohi Coach{% endif %}
+                </div>
+                <div class="bubble-content">
+                    {{ chat.message | replace('\n', '<br>') | safe }}
+                </div>
+                <div class="bubble-time">
+                    {{ chat.created_at.strftime("%I:%M %p") }}
+                </div>
+            </div>
+            {% endfor %}
+        {% endif %}
+        <!-- Dynamically injected typing indicator -->
+        <div id="typing-indicator" class="chat-bubble coach-bubble typing-bubble" style="display: none;">
+            <div class="bubble-sender">Rohi Coach</div>
+            <div class="typing-dots">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Input Area -->
+    <form id="chat-input-form" class="chat-input-area">
+        <input type="text" id="chat-message-field" placeholder="Share how you are feeling, what cravings you are fighting, or reflect on your day..." required autocomplete="off">
+        <button type="submit" id="chat-send-btn" class="btn-primary">Send</button>
+    </form>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const chatWindow = document.getElementById("chat-window");
+    const chatForm = document.getElementById("chat-input-form");
+    const messageField = document.getElementById("chat-message-field");
+    const typingIndicator = document.getElementById("typing-indicator");
+    const emptyState = document.getElementById("chat-empty");
+    const aiIndicator = document.getElementById("ai-active-indicator");
+
+    // Scroll to the bottom of the chat window
+    function scrollToBottom() {
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    // Scroll initially on page load
+    scrollToBottom();
+
+    chatForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        
+        const messageText = messageField.value.trim();
+        if (!messageText) return;
+
+        // Hide empty state if visible
+        if (emptyState) {
+            emptyState.style.display = "none";
+        }
+
+        // 1. Append User Message
+        appendMessage("user", "You", messageText);
+        messageField.value = "";
+        scrollToBottom();
+
+        // 2. Disable input & Show typing indicator
+        messageField.disabled = true;
+        document.getElementById("chat-send-btn").disabled = true;
+        typingIndicator.style.display = "block";
+        scrollToBottom();
+
+        try {
+            const response = await fetch("/api/chat", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ message: messageText })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || "Failed to connect to AI Coach.");
+            }
+
+            // 3. Hide typing indicator & Append Coach Message
+            typingIndicator.style.display = "none";
+            appendMessage("coach", "Rohi Coach", data.message);
+            
+            // Show model provider indicator
+            aiIndicator.textContent = `via ${data.provider}`;
+            aiIndicator.className = `provider-badge ${data.provider}`;
+            aiIndicator.style.display = "inline-block";
+
+            scrollToBottom();
+        } catch (err) {
+            console.error(err);
+            typingIndicator.style.display = "none";
+            appendMessage("coach", "Rohi Coach (System)", `Error: ${err.message}. Please check your connection.`);
+            scrollToBottom();
+        } finally {
+            messageField.disabled = false;
+            document.getElementById("chat-send-btn").disabled = false;
+            messageField.focus();
+        }
+    });
+
+    function appendMessage(sender, displayName, text) {
+        const bubble = document.createElement("div");
+        bubble.className = `chat-bubble ${sender}-bubble`;
+
+        const nameEl = document.createElement("div");
+        nameEl.className = "bubble-sender";
+        nameEl.textContent = displayName;
+
+        const contentEl = document.createElement("div");
+        contentEl.className = "bubble-content";
+        // Convert line breaks to HTML breaks for readable formatting
+        contentEl.innerHTML = text.replace(/\n/g, "<br>");
+
+        const timeEl = document.createElement("div");
+        timeEl.className = "bubble-time";
+        const now = new Date();
+        timeEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        bubble.appendChild(nameEl);
+        bubble.appendChild(contentEl);
+        bubble.appendChild(timeEl);
+
+        // Insert before the typing indicator
+        chatWindow.insertBefore(bubble, typingIndicator);
+    }
+</script>
+{% endblock %}

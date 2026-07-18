@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}Emergency Craving Support - Rohi{% endblock %}
+
+{% block content %}
+<div class="emergency-layout">
+    <!-- Left Column: Guided Breathing (Urge Surfing tool) -->
+    <div class="emergency-visuals">
+        <section class="card-main breathing-card">
+            <h3>Box Breathing Guide</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 2rem;">
+                Box breathing is a powerful CBT technique to regulate your nervous system during intense cravings.
+            </p>
+
+            <div class="breathing-widget">
+                <!-- Breathing animated ring -->
+                <div class="breathing-circle-outer" id="breath-outer">
+                    <div class="breathing-circle-inner" id="breath-inner"></div>
+                </div>
+                <div class="breathing-label" id="breath-label">Click Start to Begin</div>
+                <div class="breathing-sublabel" id="breath-timer">4s cycles</div>
+            </div>
+
+            <div class="breathing-controls" style="display: flex; justify-content: center; gap: 1rem; margin-top: 2rem;">
+                <button type="button" class="btn-primary" id="btn-breath-control" onclick="toggleBreathing()">Start Breathing</button>
+            </div>
+        </section>
+    </div>
+
+    <!-- Right Column: AI Custom Urge Surfing Plan -->
+    <div class="emergency-coaching">
+        <section class="card-main urge-surf-form-card">
+            <h3 style="color: #ef4444;">🚨 Emergency Craving Support</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+                Tell Rohi what habit you're craving and what triggered it. We will immediately build a custom 3-step intervention.
+            </p>
+
+            {% if not habits %}
+            <div class="empty-garden" style="padding: 1.5rem;">
+                <p>Please <a href="{{ url_for('dashboard') }}" style="color: var(--primary);">plant a habit</a> first to activate emergency support.</p>
+            </div>
+            {% else %}
+            <form id="urge-surfing-form">
+                <div class="form-group">
+                    <label for="urge-select-habit">What habit are you craving?</label>
+                    <select id="urge-select-habit" name="habit_id" required>
+                        <option value="" disabled selected>Select habit</option>
+                        {% for h in habits %}
+                        <option value="{{ h.id }}">{{ h.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label for="urge-trigger">Describe your current trigger / feelings</label>
+                    <textarea id="urge-trigger" name="trigger" rows="3" placeholder="e.g. Stressed after a meeting with my manager, sitting at my desk and wanting to check social media." required></textarea>
+                </div>
+
+                <button type="submit" id="btn-urge-submit" class="btn-primary" style="background: linear-gradient(135deg, #ef4444, #b91c1c); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2); margin-top: 1.5rem; width: 100%;">
+                    Generate Survival Plan
+                </button>
+            </form>
+            {% endif %}
+        </section>
+
+        <!-- Loading spinner for AI Plan -->
+        <section id="urge-loading" class="loading-container" style="margin-top: 1.5rem; padding: 2rem;">
+            <div class="spinner" style="border-top-color: #ef4444;"></div>
+            <p class="loading-text" style="color: #ef4444;">Formulating urge-surfing distraction plan...</p>
+        </section>
+
+        <!-- Dynamic Urge Surf Result -->
+        <section id="urge-result" class="card-main" style="display: none; margin-top: 1.5rem; border-top: 4px solid #ef4444;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="color: #ef4444; font-size: 1.2rem;">Your Habit Survival Plan</h3>
+                <span id="urge-provider" class="provider-badge groq">gemini</span>
+            </div>
+            <div id="urge-plan-content" class="markdown-body">
+                <!-- Custom Markdown items here -->
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 1.5rem; border-top: 1px solid rgba(0, 0, 0, 0.05); padding-top: 0.8rem;">
+                Remember: Cravings peak at 10-15 minutes. Use the Box Breathing widget on the left to ride out the wave.
+            </p>
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let breathingInterval;
+    let isBreathing = false;
+    let breathCycle = 0; // 0: Inhale, 1: Hold, 2: Exhale, 3: Hold
+
+    const btnControl = document.getElementById("btn-breath-control");
+    const breathLabel = document.getElementById("breath-label");
+    const breathInner = document.getElementById("breath-inner");
+
+    function toggleBreathing() {
+        if (isBreathing) {
+            // Pause
+            clearInterval(breathingInterval);
+            isBreathing = false;
+            btnControl.textContent = "Start Breathing";
+            btnControl.style.background = "";
+            breathLabel.textContent = "Breathing Paused";
+            breathInner.style.transform = "scale(1)";
+            breathInner.style.transition = "transform 1s ease";
+        } else {
+            // Start
+            isBreathing = true;
+            btnControl.textContent = "Pause Breathing";
+            btnControl.style.background = "#5c6b5e";
+            runBreathCycle();
+            breathingInterval = setInterval(runBreathCycle, 4000);
+        }
+    }
+
+    function runBreathCycle() {
+        const stages = [
+            { text: "BREATHE IN...", scale: "1.7", transition: "transform 4s linear" },
+            { text: "HOLD...", scale: "1.7", transition: "none" },
+            { text: "BREATHE OUT...", scale: "1", transition: "transform 4s linear" },
+            { text: "HOLD...", scale: "1", transition: "none" }
+        ];
+
+        const currentStage = stages[breathCycle];
+        breathLabel.textContent = currentStage.text;
+        breathInner.style.transition = currentStage.transition;
+        breathInner.style.transform = `scale(${currentStage.scale})`;
+
+        breathCycle = (breathCycle + 1) % 4;
+    }
+
+    // Clean up interval if they leave the page
+    window.addEventListener("beforeunload", () => {
+        clearInterval(breathingInterval);
+    });
+
+    // Form Submission
+    const urgeForm = document.getElementById("urge-surfing-form");
+    if (urgeForm) {
+        urgeForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const habitId = document.getElementById("urge-select-habit").value;
+            const triggerText = document.getElementById("urge-trigger").value.trim();
+
+            const loadingSpinner = document.getElementById("urge-loading");
+            const resultCard = document.getElementById("urge-result");
+            const resultPlan = document.getElementById("urge-plan-content");
+            const providerBadge = document.getElementById("urge-provider");
+
+            // UI Reset
+            loadingSpinner.style.display = "flex";
+            resultCard.style.display = "none";
+            document.getElementById("btn-urge-submit").disabled = true;
+
+            try {
+                const response = await fetch("/api/emergency/intervention", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        habit_id: habitId,
+                        trigger: triggerText
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || "Failed to generate urge surfing plan.");
+                }
+
+                // Convert markdown bullet points to HTML
+                resultPlan.innerHTML = formatMarkdown(data.intervention);
+                providerBadge.textContent = `via ${data.provider}`;
+                providerBadge.className = `provider-badge ${data.provider}`;
+
+                // Display result
+                resultCard.style.display = "block";
+                resultCard.scrollIntoView({ behavior: 'smooth' });
+
+            } catch (err) {
+                console.error(err);
+                alert(`Error: ${err.message}`);
+            } finally {
+                loadingSpinner.style.display = "none";
+                document.getElementById("btn-urge-submit").disabled = false;
+            }
+        });
+    }
+
+    function formatMarkdown(text) {
+        // Simple markdown bullet points to HTML parser
+        let html = text;
+        
+        // Headers (e.g. ### Header or **Header**)
+        html = html.replace(/^\#\#\#\s*(.*)$/gm, '<h4>$1</h4>');
+        html = html.replace(/^\#\#\s*(.*)$/gm, '<h3>$1</h3>');
+        html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        
+        // Bullet points (e.g., - item or * item)
+        html = html.replace(/^\-\s*(.*)$/gm, '<li>$1</li>');
+        html = html.replace(/^\*\s*(.*)$/gm, '<li>$1</li>');
+        
+        // Wrap contiguous list items in <ul>
+        html = html.replace(/(<li>.*?<\/li>)+/gs, (match) => `<ul>${match}</ul>`);
+        
+        // Line breaks
+        html = html.replace(/\n/g, '<br>');
+        
+        return html;
+    }
+</script>
+{% endblock %}
