@@ -56,18 +56,6 @@
                         <input type="text" id="username-input" name="username" placeholder="e.g. Rohith" required minlength="2" maxlength="30" autocomplete="off">
                     </div>
 
-                    {% if users %}
-                    <div class="form-group" style="margin-top: 1.5rem;">
-                        <label for="username-select">Or Resume Profile</label>
-                        <select id="username-select" onchange="document.getElementById('username-input').value = this.value">
-                            <option value="" selected disabled>Select profile</option>
-                            {% for u in users %}
-                            <option value="{{ u.username }}">{{ u.username }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    {% endif %}
-
                     <button type="submit" class="btn-primary" style="margin-top: 2rem;">Enter Recovery Space</button>
                 </form>
             </section>
