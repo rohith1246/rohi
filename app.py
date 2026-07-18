@@ -6,7 +6,16 @@ import datetime
 import time
 import requests
 import google.generativeai as genai
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
+from flask import (
+    Flask,
+    render_template,
+    request,
+    jsonify,
+    session,
+    redirect,
+    url_for,
+    flash,
+)
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 from sqlalchemy.orm import joinedload
@@ -16,7 +25,9 @@ from typing import Any, Tuple, Optional, Dict
 from markupsafe import escape
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 # Load environment variables
@@ -29,7 +40,11 @@ app.permanent_session_lifetime = datetime.timedelta(hours=2)
 
 # Simple in-memory rate limiter
 _rate_limits: dict = {}
-def rate_limit_check(key: str, max_requests: int = 10, window_seconds: int = 60) -> bool:
+
+
+def rate_limit_check(
+    key: str, max_requests: int = 10, window_seconds: int = 60
+) -> bool:
     """Returns True if rate limit exceeded."""
     now = time.time()
     if key not in _rate_limits:
@@ -40,9 +55,11 @@ def rate_limit_check(key: str, max_requests: int = 10, window_seconds: int = 60)
     _rate_limits[key].append(now)
     return False
 
+
 def escape_html(text: Optional[str]) -> str:
     """Escapes HTML characters from string to prevent XSS."""
     return str(escape(text)) if text else ""
+
 
 @app.before_request
 def csrf_protect() -> Any:
@@ -50,25 +67,33 @@ def csrf_protect() -> Any:
     # Ensure session token is initialized on GET requests
     if "csrf_token" not in session:
         session["csrf_token"] = secrets.token_hex(32)
-        
+
     # Skip checks in testing environments
     if app.config.get("TESTING"):
         return
-        
+
     # Enforce checks on all mutating methods
     if request.method in ["POST", "PUT", "DELETE", "PATCH"]:
         token = request.form.get("csrf_token") or request.headers.get("X-CSRF-Token")
-        
+
         # Check JSON payloads if header is missing
         if not token and request.is_json:
             try:
                 token = request.get_json().get("csrf_token")
             except Exception:
                 pass
-                
+
         if not token or token != session.get("csrf_token"):
             logger.warning(f"CSRF authentication failure for path: {request.path}")
-            return jsonify({"error": "Security validation failed. CSRF token missing or invalid."}), 400
+            return (
+                jsonify(
+                    {
+                        "error": "Security validation failed. CSRF token missing or invalid."
+                    }
+                ),
+                400,
+            )
+
 
 @app.after_request
 def add_security_headers(response: Any) -> Any:
@@ -85,6 +110,7 @@ def add_security_headers(response: Any) -> Any:
     )
     return response
 
+
 # Initialize database tables
 try:
     logger.info("Initializing database schema...")
@@ -93,59 +119,71 @@ try:
 except Exception as e:
     logger.error(f"Error during schema initialization: {e}")
 
+
 # Helper for AI model execution
 def run_ai_generation(prompt: str, response_type: str = "text") -> Tuple[str, str]:
     """Orchestrates Gemini API with standard REST fallback to Groq API."""
     gemini_key = os.getenv("GEMINI_API_KEY")
     groq_key = os.getenv("GROQ_API_KEY")
-    
+
     # Primary: Gemini
     if gemini_key and gemini_key != "your_gemini_api_key_here":
         genai.configure(api_key=gemini_key)
-        
-        models_to_try = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-1.5-flash-latest"]
+
+        models_to_try = [
+            "gemini-2.5-flash",
+            "gemini-2.5-pro",
+            "gemini-1.5-flash-latest",
+        ]
         for model_name in models_to_try:
             try:
-                logger.info(f"Attempting primary AI generation using Gemini ({model_name})...")
+                logger.info(
+                    f"Attempting primary AI generation using Gemini ({model_name})..."
+                )
                 model = genai.GenerativeModel(model_name)
-                
+
                 gen_config = {}
                 if response_type == "json":
                     gen_config["response_mime_type"] = "application/json"
-                    
+
                 response = model.generate_content(prompt, generation_config=gen_config)
                 if response.text:
                     logger.info(f"Gemini ({model_name}) succeeded.")
                     return response.text.strip(), "gemini"
             except Exception as e:
                 logger.warning(f"Gemini {model_name} failed: {e}")
-                
+
     # Fallback: Groq REST API (bypassing python-groq SDK to avoid proxy argument conflicts)
     if groq_key and groq_key != "your_groq_api_key_here":
         try:
-            logger.info("Attempting fallback AI generation using Groq API via direct REST HTTP request...")
+            logger.info(
+                "Attempting fallback AI generation using Groq API via direct REST HTTP request..."
+            )
             headers = {
                 "Authorization": f"Bearer {groq_key}",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             }
-            
+
             payload = {
                 "model": "llama-3.3-70b-specdec",
                 "messages": [
-                    {"role": "system", "content": "You are an assistant. If JSON is requested, you must output strictly valid JSON conforming to the requested schema."},
-                    {"role": "user", "content": prompt}
+                    {
+                        "role": "system",
+                        "content": "You are an assistant. If JSON is requested, you must output strictly valid JSON conforming to the requested schema.",
+                    },
+                    {"role": "user", "content": prompt},
                 ],
-                "temperature": 0.7
+                "temperature": 0.7,
             }
-            
+
             if response_type == "json":
                 payload["response_format"] = {"type": "json_object"}
-                
+
             response = requests.post(
                 "https://api.groq.com/openai/v1/chat/completions",
                 headers=headers,
                 json=payload,
-                timeout=30
+                timeout=30,
             )
             response.raise_for_status()
             res_json = response.json()
@@ -155,38 +193,43 @@ def run_ai_generation(prompt: str, response_type: str = "text") -> Tuple[str, st
                 return content.strip(), "groq"
         except Exception as e:
             logger.error(f"Groq API fallback also failed: {e}")
-            
-    raise ValueError("AI generation failed on both primary (Gemini) and fallback (Groq) models. Check API keys.")
+
+    raise ValueError(
+        "AI generation failed on both primary (Gemini) and fallback (Groq) models. Check API keys."
+    )
+
 
 # ----------------- UI Routes -----------------
+
 
 @app.route("/")
 def index() -> Any:
     """Profile selection landing page."""
     return render_template("index.html")
 
+
 @app.route("/register", methods=["GET", "POST"])
 def register() -> Any:
     """Handles new user profile registration with password hashing."""
     if request.method == "GET":
         return render_template("register.html")
-        
+
     username = escape_html(request.form.get("username", "").strip())
     password = request.form.get("password", "")
     confirm_password = request.form.get("confirm_password", "")
-    
+
     if not username or not password:
         flash("Username and password are required.")
         return redirect(url_for("register"))
-        
+
     if len(password) < 6 or not password.strip():
         flash("Password must be at least 6 characters long and cannot be just spaces.")
         return redirect(url_for("register"))
-        
+
     if password != confirm_password:
         flash("Passwords do not match.")
         return redirect(url_for("register"))
-        
+
     db = SessionLocal()
     try:
         # Check if username is taken
@@ -194,12 +237,12 @@ def register() -> Any:
         if existing_user:
             flash("Username is already taken. Please choose another.")
             return redirect(url_for("register"))
-            
+
         hashed_password = generate_password_hash(password)
         new_user = User(username=username, password_hash=hashed_password)
         db.add(new_user)
         db.commit()
-        
+
         session["user_id"] = new_user.id
         session["username"] = new_user.username
         session.permanent = True
@@ -213,26 +256,27 @@ def register() -> Any:
     finally:
         db.close()
 
+
 @app.route("/login", methods=["GET", "POST"])
 def login() -> Any:
     """Handles secure user profile login, with legacy migration for passwordless test users."""
     if request.method == "GET":
         return render_template("login.html")
-        
+
     username = escape_html(request.form.get("username", "").strip())
     password = request.form.get("password", "")
-    
+
     if not username or not password:
         flash("Please enter both username and password.")
         return redirect(url_for("login"))
-        
+
     db = SessionLocal()
     try:
         user = db.query(User).filter(User.username == username).first()
         if not user:
             flash("Invalid username or password.")
             return redirect(url_for("login"))
-            
+
         # Legacy check: automatically migrate passwordless testing user profile
         if user.password_hash is None:
             user.password_hash = generate_password_hash(password)
@@ -241,7 +285,7 @@ def login() -> Any:
         elif not check_password_hash(user.password_hash, password):
             flash("Invalid username or password.")
             return redirect(url_for("login"))
-            
+
         session["user_id"] = user.id
         session["username"] = user.username
         session.permanent = True
@@ -254,56 +298,69 @@ def login() -> Any:
     finally:
         db.close()
 
+
 @app.route("/logout")
 def logout() -> Any:
     """Clears user session."""
     session.clear()
     return redirect(url_for("index"))
 
+
 @app.route("/dashboard")
 def dashboard() -> Any:
     """Main application dashboard."""
     if "user_id" not in session:
         return redirect(url_for("index"))
-        
+
     db = SessionLocal()
     try:
         user = db.query(User).filter(User.id == session["user_id"]).first()
         if not user:
             session.clear()
             return redirect(url_for("index"))
-            
+
         habits = db.query(Habit).filter(Habit.user_id == user.id).all()
-        
+
         # Calculate daily status flags (e.g. checks if they slipped today)
         today = datetime.date.today()
         habit_statuses = {}
         for h in habits:
-            log_today = db.query(Log).filter(
-                Log.habit_id == h.id,
-                Log.created_at >= datetime.datetime.combine(today, datetime.time.min),
-                Log.created_at <= datetime.datetime.combine(today, datetime.time.max)
-            ).order_by(Log.created_at.desc()).first()
-            
+            log_today = (
+                db.query(Log)
+                .filter(
+                    Log.habit_id == h.id,
+                    Log.created_at
+                    >= datetime.datetime.combine(today, datetime.time.min),
+                    Log.created_at
+                    <= datetime.datetime.combine(today, datetime.time.max),
+                )
+                .order_by(Log.created_at.desc())
+                .first()
+            )
+
             if log_today:
                 habit_statuses[h.id] = {
                     "logged": True,
                     "value": log_today.logged_value,
-                    "severity": log_today.severity
+                    "severity": log_today.severity,
                 }
             else:
                 habit_statuses[h.id] = {
                     "logged": False,
                     "value": 0,
-                    "severity": "Unknown"
+                    "severity": "Unknown",
                 }
 
         # Retrieve or generate today's dynamic nudge
-        nudge = db.query(Nudge).filter(
-            Nudge.user_id == user.id,
-            Nudge.created_at >= datetime.datetime.combine(today, datetime.time.min),
-            Nudge.created_at <= datetime.datetime.combine(today, datetime.time.max)
-        ).first()
+        nudge = (
+            db.query(Nudge)
+            .filter(
+                Nudge.user_id == user.id,
+                Nudge.created_at >= datetime.datetime.combine(today, datetime.time.min),
+                Nudge.created_at <= datetime.datetime.combine(today, datetime.time.max),
+            )
+            .first()
+        )
 
         nudge_content = nudge.content if nudge else None
 
@@ -312,30 +369,37 @@ def dashboard() -> Any:
             user=user,
             habits=habits,
             habit_statuses=habit_statuses,
-            nudge_content=nudge_content
+            nudge_content=nudge_content,
         )
     finally:
         db.close()
+
 
 @app.route("/coach")
 def coach() -> Any:
     """CBT Adaptive AI coach page."""
     if "user_id" not in session:
         return redirect(url_for("index"))
-        
+
     db = SessionLocal()
     try:
-        chats = db.query(Chat).filter(Chat.user_id == session["user_id"]).order_by(Chat.created_at).all()
+        chats = (
+            db.query(Chat)
+            .filter(Chat.user_id == session["user_id"])
+            .order_by(Chat.created_at)
+            .all()
+        )
         return render_template("coach.html", chats=chats)
     finally:
         db.close()
+
 
 @app.route("/emergency")
 def emergency() -> Any:
     """Urge Surfing emergency assistance portal."""
     if "user_id" not in session:
         return redirect(url_for("index"))
-    
+
     db = SessionLocal()
     try:
         habits = db.query(Habit).filter(Habit.user_id == session["user_id"]).all()
@@ -343,14 +407,16 @@ def emergency() -> Any:
     finally:
         db.close()
 
+
 # ----------------- API Endpoints -----------------
+
 
 @app.route("/api/habit/create", methods=["POST"])
 def create_habit() -> Any:
     """Adds a new habit to the user's recovery garden."""
     if "user_id" not in session:
         return jsonify({"error": "Unauthorized"}), 401
-        
+
     data = request.get_json()
     name = escape_html(data.get("name", "").strip())
     unit = escape_html(data.get("unit", "").strip())
@@ -358,7 +424,7 @@ def create_habit() -> Any:
 
     if not name or not unit or daily_limit is None:
         return jsonify({"error": "Missing parameters."}), 400
-        
+
     try:
         daily_limit = int(daily_limit)
         if daily_limit < 0:
@@ -369,7 +435,11 @@ def create_habit() -> Any:
     db = SessionLocal()
     try:
         # Prevent duplicate habits
-        exists = db.query(Habit).filter(Habit.user_id == session["user_id"], Habit.name == name).first()
+        exists = (
+            db.query(Habit)
+            .filter(Habit.user_id == session["user_id"], Habit.name == name)
+            .first()
+        )
         if exists:
             return jsonify({"error": "You are already tracking this habit."}), 400
 
@@ -379,7 +449,7 @@ def create_habit() -> Any:
             unit=unit,
             daily_limit=daily_limit,
             successful_days=0,
-            last_success_date=None
+            last_success_date=None,
         )
         db.add(habit)
         db.commit()
@@ -391,12 +461,13 @@ def create_habit() -> Any:
     finally:
         db.close()
 
+
 @app.route("/api/log/create", methods=["POST"])
 def create_log() -> Any:
     """Logs daily progress, evaluating slips and updating virtual recovery garden growth."""
     if "user_id" not in session:
         return jsonify({"error": "Unauthorized"}), 401
-        
+
     data = request.get_json()
     habit_id = data.get("habit_id")
     logged_value = data.get("logged_value")
@@ -416,11 +487,12 @@ def create_log() -> Any:
 
     db = SessionLocal()
     try:
-        habit = db.query(Habit).filter(
-            Habit.id == habit_id,
-            Habit.user_id == session["user_id"]
-        ).first()
-        
+        habit = (
+            db.query(Habit)
+            .filter(Habit.id == habit_id, Habit.user_id == session["user_id"])
+            .first()
+        )
+
         if not habit:
             return jsonify({"error": "Habit not found."}), 404
 
@@ -441,7 +513,7 @@ def create_log() -> Any:
             logged_value=logged_value,
             emotional_state=emotional_state,
             trigger_context=trigger_context,
-            severity=severity
+            severity=severity,
         )
         db.add(log)
 
@@ -452,25 +524,27 @@ def create_log() -> Any:
             if habit.last_success_date != today:
                 habit.successful_days += 1
                 habit.last_success_date = today
-                logger.info(f"Tree for habit '{habit.name}' grew! Successful days: {habit.successful_days}")
+                logger.info(
+                    f"Tree for habit '{habit.name}' grew! Successful days: {habit.successful_days}"
+                )
         else:
             # Bad day (Slip): Pauses growth. If they previously logged success today, revert it.
             if habit.last_success_date == today:
                 habit.successful_days = max(0, habit.successful_days - 1)
                 habit.last_success_date = datetime.date(2000, 1, 1)
-            logger.info(f"Tree for habit '{habit.name}' paused at {habit.successful_days} days due to Slip.")
+            logger.info(
+                f"Tree for habit '{habit.name}' paused at {habit.successful_days} days due to Slip."
+            )
 
         db.commit()
-        return jsonify({
-            "log": log.to_dict(),
-            "habit": habit.to_dict()
-        }), 201
+        return jsonify({"log": log.to_dict(), "habit": habit.to_dict()}), 201
     except Exception as e:
         db.rollback()
         logger.error(f"Error logging progress: {e}")
         return jsonify({"error": "Failed to record log."}), 500
     finally:
         db.close()
+
 
 @app.route("/api/chat", methods=["POST"])
 def chat_coaching() -> Any:
@@ -489,20 +563,29 @@ def chat_coaching() -> Any:
     db = SessionLocal()
     try:
         user = db.query(User).filter(User.id == session["user_id"]).first()
-        
+
         # Save user message to database
         user_chat = Chat(user_id=user.id, sender="user", message=user_message)
         db.add(user_chat)
         db.commit()
 
         # Retrieve recent logs to provide context for AI adaptive tone adjustment
-        recent_logs = db.query(Log).options(joinedload(Log.habit)).filter(Log.user_id == user.id).order_by(Log.created_at.desc()).limit(5).all()
+        recent_logs = (
+            db.query(Log)
+            .options(joinedload(Log.habit))
+            .filter(Log.user_id == user.id)
+            .order_by(Log.created_at.desc())
+            .limit(5)
+            .all()
+        )
         log_summary = []
         emotional_states = []
         slips_logged = 0
         for l in recent_logs:
             habit_name = l.habit.name if l.habit else "Unknown"
-            log_summary.append(f"- {habit_name}: logged {l.logged_value} {l.habit.unit if l.habit else ''} ({l.severity})")
+            log_summary.append(
+                f"- {habit_name}: logged {l.logged_value} {l.habit.unit if l.habit else ''} ({l.severity})"
+            )
             if l.emotional_state:
                 emotional_states.append(l.emotional_state)
             if l.severity == "Slip":
@@ -518,12 +601,18 @@ def chat_coaching() -> Any:
             tone = "celebratory, warm, motivational, and affirming the user's hard work"
 
         # Load recent chat conversation context (last 10 entries)
-        past_chats = db.query(Chat).filter(Chat.user_id == user.id).order_by(Chat.created_at.desc()).limit(10).all()
+        past_chats = (
+            db.query(Chat)
+            .filter(Chat.user_id == user.id)
+            .order_by(Chat.created_at.desc())
+            .limit(10)
+            .all()
+        )
         past_chats.reverse()
         conversation_context = []
         for c in past_chats:
             conversation_context.append(f"{c.sender.capitalize()}: {c.message}")
-        
+
         conversation_string = "\n".join(conversation_context)
 
         # Build prompt
@@ -551,19 +640,22 @@ Do not output JSON. Do not include model intro/outro conversation. Just output t
             provider = "fallback"
 
         # Save AI reply to database
-        coach_chat = Chat(user_id=user.id, sender="coach", message=ai_reply, detected_sentiment=tone)
+        coach_chat = Chat(
+            user_id=user.id, sender="coach", message=ai_reply, detected_sentiment=tone
+        )
         db.add(coach_chat)
         db.commit()
 
-        return jsonify({
-            "message": ai_reply,
-            "provider": provider
-        })
+        return jsonify({"message": ai_reply, "provider": provider})
     except Exception as e:
         logger.error(f"Error in chat endpoint: {e}")
-        return jsonify({"error": f"Failed to get response from AI coach: {str(e)}"}), 500
+        return (
+            jsonify({"error": f"Failed to get response from AI coach: {str(e)}"}),
+            500,
+        )
     finally:
         db.close()
+
 
 @app.route("/api/nudge", methods=["GET"])
 def get_nudge() -> Any:
@@ -578,28 +670,41 @@ def get_nudge() -> Any:
     try:
         today = datetime.date.today()
         # Look for existing nudge
-        nudge = db.query(Nudge).filter(
-            Nudge.user_id == session["user_id"],
-            Nudge.created_at >= datetime.datetime.combine(today, datetime.time.min),
-            Nudge.created_at <= datetime.datetime.combine(today, datetime.time.max)
-        ).first()
+        nudge = (
+            db.query(Nudge)
+            .filter(
+                Nudge.user_id == session["user_id"],
+                Nudge.created_at >= datetime.datetime.combine(today, datetime.time.min),
+                Nudge.created_at <= datetime.datetime.combine(today, datetime.time.max),
+            )
+            .first()
+        )
 
         if nudge:
             return jsonify({"nudge": nudge.content, "cached": True})
 
         # Generate a new nudge using historical logs
         user = db.query(User).filter(User.id == session["user_id"]).first()
-        logs = db.query(Log).options(joinedload(Log.habit)).filter(Log.user_id == user.id).order_by(Log.created_at.desc()).limit(15).all()
-        
+        logs = (
+            db.query(Log)
+            .options(joinedload(Log.habit))
+            .filter(Log.user_id == user.id)
+            .order_by(Log.created_at.desc())
+            .limit(15)
+            .all()
+        )
+
         log_data = []
         for l in logs:
-            log_data.append({
-                "habit": l.habit.name if l.habit else "Unknown",
-                "severity": l.severity,
-                "emotion": l.emotional_state,
-                "context": l.trigger_context,
-                "date": l.created_at.strftime("%A, %I %p")
-            })
+            log_data.append(
+                {
+                    "habit": l.habit.name if l.habit else "Unknown",
+                    "severity": l.severity,
+                    "emotion": l.emotional_state,
+                    "context": l.trigger_context,
+                    "date": l.created_at.strftime("%A, %I %p"),
+                }
+            )
 
         prompt = f"""You are Rohi, a CBT recovery companion.
 User: {user.username}
@@ -611,7 +716,7 @@ Generate a short, personal 'Intelligent Nudge' for their dashboard (under 160 ch
 Make it highly actionable and direct. Focus on INR/₹ if mentioning activities (e.g. buying a ₹50 cup of herbal tea instead of scrolling).
 Output ONLY the nudge text. Do not wrap it in quotes. No conversation.
 """
-        
+
         try:
             nudge_text, provider = run_ai_generation(prompt, response_type="text")
         except Exception as ai_err:
@@ -626,9 +731,12 @@ Output ONLY the nudge text. Do not wrap it in quotes. No conversation.
         return jsonify({"nudge": nudge_text, "cached": False})
     except Exception as e:
         logger.error(f"Error in nudge api: {e}")
-        return jsonify({"nudge": "Water your garden with mindfulness today. You are doing great."})
+        return jsonify(
+            {"nudge": "Water your garden with mindfulness today. You are doing great."}
+        )
     finally:
         db.close()
+
 
 @app.route("/api/emergency/intervention", methods=["POST"])
 def emergency_intervention() -> Any:
@@ -648,7 +756,11 @@ def emergency_intervention() -> Any:
 
     db = SessionLocal()
     try:
-        habit = db.query(Habit).filter(Habit.id == habit_id, Habit.user_id == session["user_id"]).first()
+        habit = (
+            db.query(Habit)
+            .filter(Habit.id == habit_id, Habit.user_id == session["user_id"])
+            .first()
+        )
         if not habit:
             return jsonify({"error": "Habit not found"}), 404
 
@@ -666,22 +778,24 @@ Keep the content clear, directive, and direct. Output ONLY the response plan in 
 """
 
         try:
-            intervention_text, provider = run_ai_generation(prompt, response_type="text")
+            intervention_text, provider = run_ai_generation(
+                prompt, response_type="text"
+            )
         except Exception as ai_err:
             logger.error(f"AI generation failed: {ai_err}")
             intervention_text = "- **Action**: Splash cold water on your face right now.\n- **Reframing**: 'This is just a feeling, it doesn't control me.'\n- **Surfing**: Close your eyes and breathe deeply for 60 seconds."
             provider = "fallback"
-            
-        return jsonify({
-            "intervention": intervention_text,
-            "provider": provider
-        })
+
+        return jsonify({"intervention": intervention_text, "provider": provider})
     except Exception as e:
         logger.error(f"Error generating intervention: {e}")
         return jsonify({"error": f"Mindfulness generator failed: {str(e)}"}), 500
     finally:
         db.close()
 
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=os.environ.get("FLASK_DEBUG", "True") == "True")
+    app.run(
+        host="0.0.0.0", port=port, debug=os.environ.get("FLASK_DEBUG", "True") == "True"
+    )

@@ -1,16 +1,28 @@
 import datetime
 import logging
 from typing import Dict, Any
-from sqlalchemy import Column, Integer, String, Text, DateTime, Date, ForeignKey, Boolean, text
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Text,
+    DateTime,
+    Date,
+    ForeignKey,
+    Boolean,
+    text,
+)
 from sqlalchemy.orm import relationship
 from database import Base, engine
 
 logger = logging.getLogger(__name__)
 
+
 class User(Base):
     """
     SQLAlchemy database model representing an authenticated user profile.
     """
+
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -29,25 +41,31 @@ class User(Base):
         return {
             "id": self.id,
             "username": self.username,
-            "created_at": self.created_at.isoformat()
+            "created_at": self.created_at.isoformat(),
         }
+
 
 class Habit(Base):
     """
     SQLAlchemy database model representing a habit to track and grow.
     """
+
     __tablename__ = "habits"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     name = Column(String(200), nullable=False)
-    unit = Column(String(50), nullable=False, default="minutes")  # e.g. "minutes", "cigarettes", "drinks"
+    unit = Column(
+        String(50), nullable=False, default="minutes"
+    )  # e.g. "minutes", "cigarettes", "drinks"
     daily_limit = Column(Integer, nullable=False)  # e.g. 60 (minutes limit)
-    
+
     # Recovery Garden Fields
     successful_days = Column(Integer, nullable=False, default=0)
     last_success_date = Column(Date, nullable=True)
-    
+
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     # Relationships
@@ -79,25 +97,33 @@ class Habit(Base):
             "unit": self.unit,
             "daily_limit": self.daily_limit,
             "successful_days": self.successful_days,
-            "last_success_date": self.last_success_date.isoformat() if self.last_success_date else None,
+            "last_success_date": self.last_success_date.isoformat()
+            if self.last_success_date
+            else None,
             "growth_stage": self.get_growth_stage(),
-            "created_at": self.created_at.isoformat()
+            "created_at": self.created_at.isoformat(),
         }
+
 
 class Log(Base):
     """
     SQLAlchemy database model representing a daily tracked value for a specific habit.
     """
+
     __tablename__ = "logs"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    habit_id = Column(Integer, ForeignKey("habits.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    habit_id = Column(
+        Integer, ForeignKey("habits.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     logged_value = Column(Integer, nullable=False)
     emotional_state = Column(String(100), nullable=True)
     trigger_context = Column(Text, nullable=True)
     severity = Column(String(50), nullable=False)  # "Success", "Struggle", "Slip"
-    
+
     created_at = Column(DateTime, default=datetime.datetime.utcnow, index=True)
 
     # Relationships
@@ -114,21 +140,25 @@ class Log(Base):
             "emotional_state": self.emotional_state,
             "trigger_context": self.trigger_context,
             "severity": self.severity,
-            "created_at": self.created_at.isoformat()
+            "created_at": self.created_at.isoformat(),
         }
+
 
 class Chat(Base):
     """
     SQLAlchemy database model representing a message in the CBT Coach conversation logs.
     """
+
     __tablename__ = "chats"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     sender = Column(String(50), nullable=False)  # "user" or "coach"
     message = Column(Text, nullable=False)
     detected_sentiment = Column(String(100), nullable=True)
-    
+
     created_at = Column(DateTime, default=datetime.datetime.utcnow, index=True)
 
     # Relationships
@@ -142,20 +172,24 @@ class Chat(Base):
             "sender": self.sender,
             "message": self.message,
             "detected_sentiment": self.detected_sentiment,
-            "created_at": self.created_at.isoformat()
+            "created_at": self.created_at.isoformat(),
         }
+
 
 class Nudge(Base):
     """
     SQLAlchemy database model representing a daily customized pattern nudge banner.
     """
+
     __tablename__ = "nudges"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     content = Column(Text, nullable=False)
     is_read = Column(Boolean, default=False)
-    
+
     created_at = Column(DateTime, default=datetime.datetime.utcnow, index=True)
 
     # Relationships
@@ -168,8 +202,9 @@ class Nudge(Base):
             "user_id": self.user_id,
             "content": self.content,
             "is_read": self.is_read,
-            "created_at": self.created_at.isoformat()
+            "created_at": self.created_at.isoformat(),
         }
+
 
 def init_db() -> None:
     """
@@ -181,11 +216,17 @@ def init_db() -> None:
         try:
             dialect_name = engine.name
             if dialect_name == "postgresql":
-                conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(200);"))
+                conn.execute(
+                    text(
+                        "ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(200);"
+                    )
+                )
                 conn.commit()
             elif dialect_name == "sqlite":
                 try:
-                    conn.execute(text("ALTER TABLE users ADD COLUMN password_hash VARCHAR(200);"))
+                    conn.execute(
+                        text("ALTER TABLE users ADD COLUMN password_hash VARCHAR(200);")
+                    )
                     conn.commit()
                 except Exception:
                     pass

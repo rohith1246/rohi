@@ -1,4 +1,5 @@
 import os
+
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 
 import json
@@ -9,8 +10,8 @@ from app import app, run_ai_generation
 from database import Base, engine, SessionLocal
 from models import User, Habit, Log
 
-class RohiTestCase(unittest.TestCase):
 
+class RohiTestCase(unittest.TestCase):
     def setUp(self):
         # Configure app for testing
         app.config["TESTING"] = True
@@ -33,7 +34,7 @@ class RohiTestCase(unittest.TestCase):
             test_user = User(username="TestUser")
             self.db.add(test_user)
             self.db.commit()
-            
+
             sess["user_id"] = test_user.id
             sess["username"] = test_user.username
             self.test_user_id = test_user.id
@@ -49,12 +50,12 @@ class RohiTestCase(unittest.TestCase):
         payload = {
             "name": "Screen Time",
             "unit": "minutes",
-            "daily_limit": -10  # Invalid negative limit
+            "daily_limit": -10,  # Invalid negative limit
         }
         response = self.client.post(
             "/api/habit/create",
             data=json.dumps(payload),
-            content_type="application/json"
+            content_type="application/json",
         )
         self.assertEqual(response.status_code, 400)
         data = json.loads(response.get_data(as_text=True))
@@ -63,7 +64,9 @@ class RohiTestCase(unittest.TestCase):
     def test_log_creation_invalid_value(self):
         """Verify that negative logged values are rejected with 400 Bad Request."""
         # Create a valid habit first
-        habit = Habit(user_id=self.test_user_id, name="Smoking", unit="cigs", daily_limit=5)
+        habit = Habit(
+            user_id=self.test_user_id, name="Smoking", unit="cigs", daily_limit=5
+        )
         self.db.add(habit)
         self.db.commit()
 
@@ -71,12 +74,10 @@ class RohiTestCase(unittest.TestCase):
             "habit_id": habit.id,
             "logged_value": -1,  # Invalid negative value
             "emotional_state": "Stressed",
-            "trigger_context": "At work"
+            "trigger_context": "At work",
         }
         response = self.client.post(
-            "/api/log/create",
-            data=json.dumps(payload),
-            content_type="application/json"
+            "/api/log/create", data=json.dumps(payload), content_type="application/json"
         )
         self.assertEqual(response.status_code, 400)
         data = json.loads(response.get_data(as_text=True))
@@ -85,7 +86,13 @@ class RohiTestCase(unittest.TestCase):
     # 2. Virtual Recovery Garden Growth & Pause Logic
     def test_garden_tree_growth_on_success(self):
         """Verify successful day increments the tree successful_days counter."""
-        habit = Habit(user_id=self.test_user_id, name="Social Media", unit="minutes", daily_limit=60, successful_days=0)
+        habit = Habit(
+            user_id=self.test_user_id,
+            name="Social Media",
+            unit="minutes",
+            daily_limit=60,
+            successful_days=0,
+        )
         self.db.add(habit)
         self.db.commit()
 
@@ -93,12 +100,10 @@ class RohiTestCase(unittest.TestCase):
             "habit_id": habit.id,
             "logged_value": 45,  # Within the limit of 60
             "emotional_state": "Calm",
-            "trigger_context": "Home"
+            "trigger_context": "Home",
         }
         response = self.client.post(
-            "/api/log/create",
-            data=json.dumps(payload),
-            content_type="application/json"
+            "/api/log/create", data=json.dumps(payload), content_type="application/json"
         )
         self.assertEqual(response.status_code, 201)
 
@@ -109,7 +114,13 @@ class RohiTestCase(unittest.TestCase):
 
     def test_garden_tree_paused_on_slip(self):
         """Verify that a slip logs correctly but leaves successful_days unchanged (pauses growth)."""
-        habit = Habit(user_id=self.test_user_id, name="Social Media", unit="minutes", daily_limit=60, successful_days=5)
+        habit = Habit(
+            user_id=self.test_user_id,
+            name="Social Media",
+            unit="minutes",
+            daily_limit=60,
+            successful_days=5,
+        )
         self.db.add(habit)
         self.db.commit()
 
@@ -117,12 +128,10 @@ class RohiTestCase(unittest.TestCase):
             "habit_id": habit.id,
             "logged_value": 90,  # Exceeds the limit of 60 (Slip)
             "emotional_state": "Bored",
-            "trigger_context": "Night scrolling"
+            "trigger_context": "Night scrolling",
         }
         response = self.client.post(
-            "/api/log/create",
-            data=json.dumps(payload),
-            content_type="application/json"
+            "/api/log/create", data=json.dumps(payload), content_type="application/json"
         )
         self.assertEqual(response.status_code, 201)
 
@@ -150,17 +159,22 @@ class RohiTestCase(unittest.TestCase):
         mock_groq_post.return_value.json.return_value = mock_response_json
 
         # We temporarily disable the Gemini API Key and set a mock Groq API Key to force fallback execution
-        with patch.dict("os.environ", {
-            "GEMINI_API_KEY": "invalid_placeholder_to_force_failure",
-            "GROQ_API_KEY": "mocked_groq_api_key_for_testing"
-        }):
+        with patch.dict(
+            "os.environ",
+            {
+                "GEMINI_API_KEY": "invalid_placeholder_to_force_failure",
+                "GROQ_API_KEY": "mocked_groq_api_key_for_testing",
+            },
+        ):
             # Run helper
             prompt = "Test fallback scenario prompt"
             result, provider = run_ai_generation(prompt, response_type="text")
-            
+
             # Verify it fell back to Groq
             self.assertEqual(provider, "groq")
-            self.assertEqual(result, "Take a walk and call a friend to distract yourself.")
+            self.assertEqual(
+                result, "Take a walk and call a friend to distract yourself."
+            )
             self.assertTrue(mock_groq_post.called)
 
     # 4. Authentication Verification Tests
@@ -169,7 +183,7 @@ class RohiTestCase(unittest.TestCase):
         payload = {
             "username": "NewSecureUser",
             "password": "securepassword123",
-            "confirm_password": "securepassword123"
+            "confirm_password": "securepassword123",
         }
         response = self.client.post("/register", data=payload)
         # Should redirect (302) to dashboard
@@ -185,19 +199,13 @@ class RohiTestCase(unittest.TestCase):
         self.db.commit()
 
         # Login with correct password
-        payload = {
-            "username": "SecureUser",
-            "password": "mypassword"
-        }
+        payload = {"username": "SecureUser", "password": "mypassword"}
         response = self.client.post("/login", data=payload)
         self.assertEqual(response.status_code, 302)
         self.assertIn("/dashboard", response.headers["Location"])
 
         # Login with wrong password
-        payload = {
-            "username": "SecureUser",
-            "password": "wrongpassword"
-        }
+        payload = {"username": "SecureUser", "password": "wrongpassword"}
         response = self.client.post("/login", data=payload)
         # Should redirect back to login page on failure
         self.assertEqual(response.status_code, 302)
@@ -217,16 +225,12 @@ class RohiTestCase(unittest.TestCase):
         # Temporarily enable CSRF protection by toggling TESTING config flag
         app.config["TESTING"] = False
         try:
-            payload = {
-                "name": "Testing CSRF",
-                "unit": "counts",
-                "daily_limit": 10
-            }
+            payload = {"name": "Testing CSRF", "unit": "counts", "daily_limit": 10}
             # No X-CSRF-Token or csrf_token parameter in payload
             response = self.client.post(
                 "/api/habit/create",
                 data=json.dumps(payload),
-                content_type="application/json"
+                content_type="application/json",
             )
             # Should block with 400 Bad Request
             self.assertEqual(response.status_code, 400)
@@ -254,7 +258,7 @@ class RohiTestCase(unittest.TestCase):
         response = self.client.post(
             "/api/habit/create",
             data=json.dumps(payload),
-            content_type="application/json"
+            content_type="application/json",
         )
         self.assertEqual(response.status_code, 401)
 
@@ -262,18 +266,23 @@ class RohiTestCase(unittest.TestCase):
         """Verify log API returns 401 when session is not set."""
         with self.client.session_transaction() as sess:
             sess.clear()
-        payload = {"habit_id": 1, "logged_value": 5, "emotional_state": "OK", "trigger_context": "test"}
+        payload = {
+            "habit_id": 1,
+            "logged_value": 5,
+            "emotional_state": "OK",
+            "trigger_context": "test",
+        }
         response = self.client.post(
-            "/api/log/create",
-            data=json.dumps(payload),
-            content_type="application/json"
+            "/api/log/create", data=json.dumps(payload), content_type="application/json"
         )
         self.assertEqual(response.status_code, 401)
 
     # 7. Duplicate Habit Prevention Test
     def test_duplicate_habit_rejected(self):
         """Verify the same habit cannot be planted twice by the same user."""
-        habit = Habit(user_id=self.test_user_id, name="Smoking", unit="cigs", daily_limit=5)
+        habit = Habit(
+            user_id=self.test_user_id, name="Smoking", unit="cigs", daily_limit=5
+        )
         self.db.add(habit)
         self.db.commit()
 
@@ -281,7 +290,7 @@ class RohiTestCase(unittest.TestCase):
         response = self.client.post(
             "/api/habit/create",
             data=json.dumps(payload),
-            content_type="application/json"
+            content_type="application/json",
         )
         self.assertEqual(response.status_code, 400)
         data = json.loads(response.get_data(as_text=True))
@@ -294,7 +303,7 @@ class RohiTestCase(unittest.TestCase):
         response = self.client.post(
             "/api/habit/create",
             data=json.dumps(payload),
-            content_type="application/json"
+            content_type="application/json",
         )
         self.assertEqual(response.status_code, 400)
 
@@ -304,14 +313,20 @@ class RohiTestCase(unittest.TestCase):
         response = self.client.post(
             "/api/habit/create",
             data=json.dumps(payload),
-            content_type="application/json"
+            content_type="application/json",
         )
         self.assertEqual(response.status_code, 400)
 
     # 9. Severity Classification Boundary Tests
     def test_severity_at_exact_limit_is_struggle(self):
         """Verify that logging exactly the daily limit results in Struggle severity."""
-        habit = Habit(user_id=self.test_user_id, name="Coffee", unit="cups", daily_limit=3, successful_days=0)
+        habit = Habit(
+            user_id=self.test_user_id,
+            name="Coffee",
+            unit="cups",
+            daily_limit=3,
+            successful_days=0,
+        )
         self.db.add(habit)
         self.db.commit()
 
@@ -319,12 +334,10 @@ class RohiTestCase(unittest.TestCase):
             "habit_id": habit.id,
             "logged_value": 3,  # Exactly at limit
             "emotional_state": "Neutral",
-            "trigger_context": "Morning"
+            "trigger_context": "Morning",
         }
         response = self.client.post(
-            "/api/log/create",
-            data=json.dumps(payload),
-            content_type="application/json"
+            "/api/log/create", data=json.dumps(payload), content_type="application/json"
         )
         self.assertEqual(response.status_code, 201)
         data = json.loads(response.get_data(as_text=True))
@@ -332,7 +345,13 @@ class RohiTestCase(unittest.TestCase):
 
     def test_severity_below_limit_is_success(self):
         """Verify that logging below the daily limit results in Success severity."""
-        habit = Habit(user_id=self.test_user_id, name="Coffee", unit="cups", daily_limit=3, successful_days=0)
+        habit = Habit(
+            user_id=self.test_user_id,
+            name="Coffee",
+            unit="cups",
+            daily_limit=3,
+            successful_days=0,
+        )
         self.db.add(habit)
         self.db.commit()
 
@@ -340,12 +359,10 @@ class RohiTestCase(unittest.TestCase):
             "habit_id": habit.id,
             "logged_value": 1,  # Below limit
             "emotional_state": "Happy",
-            "trigger_context": "Breakfast"
+            "trigger_context": "Breakfast",
         }
         response = self.client.post(
-            "/api/log/create",
-            data=json.dumps(payload),
-            content_type="application/json"
+            "/api/log/create", data=json.dumps(payload), content_type="application/json"
         )
         self.assertEqual(response.status_code, 201)
         data = json.loads(response.get_data(as_text=True))
@@ -353,7 +370,13 @@ class RohiTestCase(unittest.TestCase):
 
     def test_severity_above_limit_is_slip(self):
         """Verify that logging above the daily limit results in Slip severity."""
-        habit = Habit(user_id=self.test_user_id, name="Coffee", unit="cups", daily_limit=3, successful_days=0)
+        habit = Habit(
+            user_id=self.test_user_id,
+            name="Coffee",
+            unit="cups",
+            daily_limit=3,
+            successful_days=0,
+        )
         self.db.add(habit)
         self.db.commit()
 
@@ -361,12 +384,10 @@ class RohiTestCase(unittest.TestCase):
             "habit_id": habit.id,
             "logged_value": 7,  # Above limit
             "emotional_state": "Stressed",
-            "trigger_context": "Office"
+            "trigger_context": "Office",
         }
         response = self.client.post(
-            "/api/log/create",
-            data=json.dumps(payload),
-            content_type="application/json"
+            "/api/log/create", data=json.dumps(payload), content_type="application/json"
         )
         self.assertEqual(response.status_code, 201)
         data = json.loads(response.get_data(as_text=True))
@@ -375,11 +396,17 @@ class RohiTestCase(unittest.TestCase):
     # 10. Registration Validation Tests
     def test_registration_duplicate_username_rejected(self):
         """Verify that registering an existing username returns error redirect."""
-        existing = User(username="ExistingUser", password_hash=generate_password_hash("pass123"))
+        existing = User(
+            username="ExistingUser", password_hash=generate_password_hash("pass123")
+        )
         self.db.add(existing)
         self.db.commit()
 
-        payload = {"username": "ExistingUser", "password": "newpass123", "confirm_password": "newpass123"}
+        payload = {
+            "username": "ExistingUser",
+            "password": "newpass123",
+            "confirm_password": "newpass123",
+        }
         response = self.client.post("/register", data=payload)
         self.assertEqual(response.status_code, 302)
         self.assertIn("/register", response.headers["Location"])
@@ -394,8 +421,15 @@ class RohiTestCase(unittest.TestCase):
     # 11. Growth Stage Model Unit Test
     def test_growth_stage_calculation(self):
         """Verify get_growth_stage() returns correct stage at each milestone."""
-        habit = Habit(user_id=self.test_user_id, name="Test", unit="x", daily_limit=1, successful_days=0)
-        self.db.add(habit); self.db.commit()
+        habit = Habit(
+            user_id=self.test_user_id,
+            name="Test",
+            unit="x",
+            daily_limit=1,
+            successful_days=0,
+        )
+        self.db.add(habit)
+        self.db.commit()
         self.assertEqual(habit.get_growth_stage(), 1)  # Seed
 
         habit.successful_days = 2
@@ -426,4 +460,3 @@ class RohiTestCase(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
