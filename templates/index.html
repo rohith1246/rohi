@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Rohi - Compassionate Habit Recovery & Virtual Garden{% endblock %}
+
+{% block content %}
+<div class="home-container">
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="hero-content">
+            <h2 class="hero-title">A Compassionate Path to Breaking Bad Habits</h2>
+            <p class="hero-subtitle">
+                Replace punitive streaks with positive growth. Rohi combines Cognitive Behavioral Therapy (CBT), interactive urge surfing tools, and a virtual garden to support your recovery journey.
+            </p>
+        </div>
+
+        <!-- Login / Entry Form -->
+        <div class="hero-form-card">
+            <div class="auth-header" style="margin-bottom: 1.5rem; text-align: left;">
+                <h3>Start Your Journey</h3>
+                <p style="font-size: 0.85rem; color: var(--text-muted);">Enter a nickname to enter your space.</p>
+            </div>
+            <form action="{{ url_for('set_user') }}" method="POST" class="auth-form">
+                <div class="form-group">
+                    <label for="username-input">Nickname</label>
+                    <input type="text" id="username-input" name="username" placeholder="e.g. Rohith" required minlength="2" maxlength="30" autocomplete="off">
+                </div>
+                <button type="submit" class="btn-primary" style="margin-top: 1rem;">Enter Space</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Features Showcase Grid -->
+    <section class="features-section">
+        <h3 class="section-title-center">What is inside Rohi?</h3>
+        <p class="section-desc-center">Explore the GenAI-powered features designed to guide you through behavior change.</p>
+
+        <div class="features-grid">
+            <!-- Feature 1: Recovery Garden -->
+            <article class="feature-card">
+                <div class="feature-icon-wrapper">🌳</div>
+                <h4>Virtual Recovery Garden</h4>
+                <p>
+                    Punitive counters that reset to zero on relapses cause guilt and discouragement. Instead, Rohi grows a virtual tree. Successful days advance your tree through 6 visual growth stages (Seed to Bloom). Slips merely pause growth without destroying your achievements.
+                </p>
+                <ul class="feature-bullets">
+                    <li>Animated SVG trees reflecting progress</li>
+                    <li>Growth Paused states for self-compassion</li>
+                    <li>Grid layout for tracking multiple habits</li>
+                </ul>
+            </article>
+
+            <!-- Feature 2: AI Coach -->
+            <article class="feature-card">
+                <div class="feature-icon-wrapper">💬</div>
+                <h4>CBT Adaptive AI Coach</h4>
+                <p>
+                    Talk confidentially with Rohi Coach, a virtual Cognitive Behavioral Therapy companion. Rohi reads your past logs and chats to maintain memory, dynamically adjusting its tone (nurturing, strict, motivational, or therapeutic) to match your current stress levels.
+                </p>
+                <ul class="feature-bullets">
+                    <li>CBT-informed guidance on-demand</li>
+                    <li>Context-aware sentiment memory</li>
+                    <li>Zero-dependency dual fallback architecture</li>
+                </ul>
+            </article>
+
+            <!-- Feature 3: Daily Nudges -->
+            <article class="feature-card">
+                <div class="feature-icon-wrapper">🧠</div>
+                <h4>Predictive Daily Nudges</h4>
+                <p>
+                    Proactive recovery starts before triggers hit. Rohi evaluates your historical log patterns, emotional states, and timing windows, then outputs a custom daily nudge warning you of risks and suggesting actionable, budget-friendly CBT redirects.
+                </p>
+                <ul class="feature-bullets">
+                    <li>Daily dashboard notification banners</li>
+                    <li>Customized redirects in local currency</li>
+                    <li>Automated logs pattern parser</li>
+                </ul>
+            </article>
+
+            <!-- Feature 4: Emergency Craving Support -->
+            <article class="feature-card">
+                <div class="feature-icon-wrapper">🚨</div>
+                <h4>Craving Support (Urge Surfing)</h4>
+                <p>
+                    When cravings peak, access emergency tools immediately. Synchronize your breathing with our Box Breathing visualizer, and type in your triggers to generate an on-demand AI survival plan outlining physical redirects and cognitive reframing steps.
+                </p>
+                <ul class="feature-bullets">
+                    <li>Interactive guided breathing visualizer</li>
+                    <li>On-demand custom AI distraction plans</li>
+                    <li>Cognitive Reframing instructions</li>
+                </ul>
+            </article>
+        </div>
+    </section>
+</div>
+{% endblock %}

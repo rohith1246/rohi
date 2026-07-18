@@ -43,22 +43,6 @@
         <!-- Content Area -->
         <main id="main-content" class="main-content">
             {% block content %}
-            <!-- Default Landing / Profile Selection -->
-            <section class="auth-card">
-                <div class="auth-header">
-                    <h2>Welcome to Aura</h2>
-                    <p>Enter your nickname to access your recovery garden and CBT companion.</p>
-                </div>
-
-                <form action="{{ url_for('set_user') }}" method="POST" class="auth-form">
-                    <div class="form-group">
-                        <label for="username-input">Enter Nickname</label>
-                        <input type="text" id="username-input" name="username" placeholder="e.g. Rohith" required minlength="2" maxlength="30" autocomplete="off">
-                    </div>
-
-                    <button type="submit" class="btn-primary" style="margin-top: 2rem;">Enter Recovery Space</button>
-                </form>
-            </section>
             {% endblock %}
         </main>
 

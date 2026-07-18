@@ -98,12 +98,7 @@ def run_ai_generation(prompt, response_type="text"):
 @app.route("/")
 def index():
     """Profile selection landing page."""
-    db = SessionLocal()
-    try:
-        users = db.query(User).order_by(User.username).all()
-        return render_template("base.html", users=users)
-    finally:
-        db.close()
+    return render_template("index.html")
 
 @app.route("/set_user", methods=["POST"])
 def set_user():
