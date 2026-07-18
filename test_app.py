@@ -4,6 +4,7 @@ os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 import json
 import unittest
 from unittest.mock import patch
+from werkzeug.security import generate_password_hash
 from app import app, run_ai_generation
 from database import Base, engine, SessionLocal
 from models import User, Habit, Log
@@ -178,7 +179,6 @@ class RohiTestCase(unittest.TestCase):
     def test_user_login_success(self):
         """Verify login succeeds with correct credentials and fails with wrong credentials."""
         # Register a test user with a hashed password directly
-        from werkzeug.security import generate_password_hash
         hashed = generate_password_hash("mypassword")
         user = User(username="SecureUser", password_hash=hashed)
         self.db.add(user)
@@ -375,7 +375,6 @@ class RohiTestCase(unittest.TestCase):
     # 10. Registration Validation Tests
     def test_registration_duplicate_username_rejected(self):
         """Verify that registering an existing username returns error redirect."""
-        from werkzeug.security import generate_password_hash
         existing = User(username="ExistingUser", password_hash=generate_password_hash("pass123"))
         self.db.add(existing)
         self.db.commit()
