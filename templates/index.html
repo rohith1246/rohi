@@ -5,89 +5,173 @@
 {% block content %}
 <div class="home-container">
     <!-- Hero Section -->
-    <section class="hero-section">
+    <section class="hero-section glass-hero">
         <div class="hero-content">
-            <h2 class="hero-title">A Compassionate Path to Breaking Bad Habits</h2>
+            <span class="badge badge-active" style="display: inline-block; width: fit-content; margin-bottom: 0.5rem;">GenAI CBT Recovery Space</span>
+            <h2 class="hero-title">Grow Beyond Your Streaks</h2>
             <p class="hero-subtitle">
-                Replace punitive streaks with positive growth. Rohi combines Cognitive Behavioral Therapy (CBT), interactive urge surfing tools, and a virtual garden to support your recovery journey.
+                Raw willpower fails. Rohi uses Cognitive Behavioral Therapy (CBT), interactive urge surfing visualizers, and a virtual growth garden to rewrite the habit loop. Your progress is sacred—slips pause growth without erasing history.
             </p>
-        </div>
-
-        <!-- Login / Entry Form -->
-        <div class="hero-form-card">
-            <div class="auth-header" style="margin-bottom: 1.5rem; text-align: left;">
-                <h3>Start Your Journey</h3>
-                <p style="font-size: 0.85rem; color: var(--text-muted);">Enter a nickname to enter your space.</p>
+            <div class="hero-actions" style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                <a href="{{ url_for('register') }}" class="btn-primary" style="text-align: center; text-decoration: none; padding: 0.8rem 2rem; width: auto; flex: 1;">Plant Your Seed (Register)</a>
+                <a href="{{ url_for('login') }}" class="btn-secondary" style="text-align: center; text-decoration: none; padding: 0.8rem 2rem; width: auto; flex: 1;">Resume Progress (Login)</a>
             </div>
-            <form action="{{ url_for('set_user') }}" method="POST" class="auth-form">
-                <div class="form-group">
-                    <label for="username-input">Nickname</label>
-                    <input type="text" id="username-input" name="username" placeholder="e.g. Rohith" required minlength="2" maxlength="30" autocomplete="off">
-                </div>
-                <button type="submit" class="btn-primary" style="margin-top: 1rem;">Enter Space</button>
-            </form>
+        </div>
+        <div class="hero-graphic-card">
+            <!-- Sleek SVG diagram representing growth progress -->
+            <svg class="tree-svg sway-anim" viewBox="0 0 100 120" style="height: 200px; width: 100%;">
+                <!-- Soil base -->
+                <path d="M10,105 Q50,95 90,105 L90,115 L10,115 Z" fill="#2c1e13" />
+                <path d="M5,107 Q50,98 95,107" stroke="#4a805a" stroke-width="2" fill="none" />
+                
+                <!-- Main trunk -->
+                <path d="M47,100 Q48,65 42,45 Q44,40 50,40 Q52,65 53,100 Z" fill="#4d321e" />
+                
+                <!-- Branches -->
+                <path d="M44,65 Q30,55 24,42 Q30,42 42,60 Z" fill="#4d321e" />
+                <path d="M51,75 Q68,60 76,55 Q68,60 52,70 Z" fill="#4d321e" />
+                <path d="M43,45 Q55,30 65,22 Q58,32 46,42 Z" fill="#4d321e" />
+                
+                <!-- Foliage circles (Blooming Tree) -->
+                <circle cx="22" cy="40" r="14" fill="#4a805a" opacity="0.85" />
+                <circle cx="72" cy="52" r="13" fill="#4a805a" opacity="0.85" />
+                <circle cx="65" cy="22" r="15" fill="#4a805a" opacity="0.85" />
+                <circle cx="44" cy="34" r="18" fill="#4a805a" opacity="0.9" />
+                <circle cx="52" cy="18" r="14" fill="#4a805a" opacity="0.85" />
+                
+                <!-- Blossom buds -->
+                <circle cx="20" cy="36" r="3" fill="#e9d3d3" />
+                <circle cx="26" cy="44" r="2.5" fill="#f0dbdb" />
+                <circle cx="68" cy="50" r="3" fill="#e9d3d3" />
+                <circle cx="74" cy="56" r="2" fill="#f0dbdb" />
+                <circle cx="62" cy="20" r="2.5" fill="#e9d3d3" />
+                <circle cx="40" cy="30" r="3.5" fill="#f5e1e1" />
+                <circle cx="46" cy="36" r="2" fill="#e9d3d3" />
+                <circle cx="50" cy="16" r="3" fill="#f5e1e1" />
+            </svg>
+            <p style="font-size: 0.8rem; text-align: center; color: var(--accent); font-weight: 600; margin-top: 1rem; text-transform: uppercase;">Watered by Mindfulness</p>
         </div>
     </section>
 
-    <!-- Features Showcase Grid -->
+    <!-- How Rohi Solves the Problem (CBT Science Section) -->
+    <section class="science-section card-main" style="border-top: 4px solid var(--accent);">
+        <h3 class="section-title" style="font-size: 1.8rem; text-align: center; margin-bottom: 0.5rem; color: var(--accent);">
+            The Science: How Rohi Solves the Habit Loop
+        </h3>
+        <p style="text-align: center; color: var(--text-muted); font-size: 0.95rem; max-width: 700px; margin: 0 auto 3rem;">
+            Habits are driven by a neurological loop: Trigger ➔ Urge ➔ Action ➔ Reward. Standard apps only track the result, leaving you to fight the urge alone. Rohi actively breaks the cycle at every single stage.
+        </p>
+
+        <div class="loop-grid">
+            <!-- Step 1 -->
+            <div class="loop-step">
+                <div class="step-num">1</div>
+                <div class="step-label">The Cue / Trigger</div>
+                <p class="step-text">
+                    <strong>The Problem:</strong> Triggers occur automatically in specific contexts or emotional states.
+                </p>
+                <div class="step-solution">
+                    <strong>Rohi's Solution: Pattern Predictor</strong>
+                    <p>Daily AI Nudges evaluate context logs to identify your risk times and trigger patterns, notifying you before they strike.</p>
+                </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="loop-step">
+                <div class="step-num">2</div>
+                <div class="step-label">The Craving / Urge</div>
+                <p class="step-text">
+                    <strong>The Problem:</strong> A chemical craving spike is physically overwhelming, driving immediate action.
+                </p>
+                <div class="step-solution">
+                    <strong>Rohi's Solution: Urge Surfing Wave</strong>
+                    <p>Paced Box Breathing regulates physiology, while custom AI distraction plans formulate immediate physical and cognitive reframing statements.</p>
+                </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="loop-step">
+                <div class="step-num">3</div>
+                <div class="step-label">The Action / Routine</div>
+                <p class="step-text">
+                    <strong>The Problem:</strong> The brain falls back to automated negative habits (scrolling, smoking, eating).
+                </p>
+                <div class="step-solution">
+                    <strong>Rohi's Solution: CBT AI Coach</strong>
+                    <p>An on-demand CBT companion adapts its response tone to redirect your routine into healthy alternative habits.</p>
+                </div>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="loop-step">
+                <div class="step-num">4</div>
+                <div class="step-label">The Reward</div>
+                <p class="step-text">
+                    <strong>The Problem:</strong> Breaking streaks deletes progress, causing shame, which triggers the loop again.
+                </p>
+                <div class="step-solution">
+                    <strong>Rohi's Solution: Virtual Garden</strong>
+                    <p>Successful days grow animated trees. Slipping pauses growth rather than resetting the garden—removing shame and reinforcing positive habits.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Detailed Features Showcase -->
     <section class="features-section">
-        <h3 class="section-title-center">What is inside Rohi?</h3>
-        <p class="section-desc-center">Explore the GenAI-powered features designed to guide you through behavior change.</p>
+        <h3 class="section-title-center">Core Application Modules</h3>
+        <p class="section-desc-center">Explore the interactive panels built inside your secure space.</p>
 
         <div class="features-grid">
-            <!-- Feature 1: Recovery Garden -->
             <article class="feature-card">
                 <div class="feature-icon-wrapper">🌳</div>
                 <h4>Virtual Recovery Garden</h4>
                 <p>
-                    Punitive counters that reset to zero on relapses cause guilt and discouragement. Instead, Rohi grows a virtual tree. Successful days advance your tree through 6 visual growth stages (Seed to Bloom). Slips merely pause growth without destroying your achievements.
+                    Plant seeds for different habits. Days spent clean grow your trees from sprouts into blooming trees. Slips shift the plots into resting states, protecting your progress.
                 </p>
                 <ul class="feature-bullets">
-                    <li>Animated SVG trees reflecting progress</li>
-                    <li>Growth Paused states for self-compassion</li>
-                    <li>Grid layout for tracking multiple habits</li>
+                    <li>6-stage interactive SVG visuals</li>
+                    <li>Swaying animations for healthy plots</li>
+                    <li>Compassionate pause state overlays</li>
                 </ul>
             </article>
 
-            <!-- Feature 2: AI Coach -->
             <article class="feature-card">
                 <div class="feature-icon-wrapper">💬</div>
                 <h4>CBT Adaptive AI Coach</h4>
                 <p>
-                    Talk confidentially with Rohi Coach, a virtual Cognitive Behavioral Therapy companion. Rohi reads your past logs and chats to maintain memory, dynamically adjusting its tone (nurturing, strict, motivational, or therapeutic) to match your current stress levels.
+                    Chat in real-time with Rohi. Using your logged emotional patterns, the coach modifies its responses from celebrative to trigger-preventative tones.
                 </p>
                 <ul class="feature-bullets">
-                    <li>CBT-informed guidance on-demand</li>
-                    <li>Context-aware sentiment memory</li>
-                    <li>Zero-dependency dual fallback architecture</li>
+                    <li>Dynamic context-based coaching</li>
+                    <li>Full session conversation histories</li>
+                    <li>Gemini and Groq REST API fallbacks</li>
                 </ul>
             </article>
 
-            <!-- Feature 3: Daily Nudges -->
             <article class="feature-card">
                 <div class="feature-icon-wrapper">🧠</div>
-                <h4>Predictive Daily Nudges</h4>
+                <h4>Intelligent Nudge Banners</h4>
                 <p>
-                    Proactive recovery starts before triggers hit. Rohi evaluates your historical log patterns, emotional states, and timing windows, then outputs a custom daily nudge warning you of risks and suggesting actionable, budget-friendly CBT redirects.
+                    Get warning signs flags and mindfulness exercises on your dashboard daily, complete with local currency budgets (₹) for redirection activities.
                 </p>
                 <ul class="feature-bullets">
-                    <li>Daily dashboard notification banners</li>
-                    <li>Customized redirects in local currency</li>
-                    <li>Automated logs pattern parser</li>
+                    <li>Pattern tracking indicators</li>
+                    <li>Actionable habit alternatives</li>
+                    <li>Budget-optimized suggestions</li>
                 </ul>
             </article>
 
-            <!-- Feature 4: Emergency Craving Support -->
             <article class="feature-card">
                 <div class="feature-icon-wrapper">🚨</div>
-                <h4>Craving Support (Urge Surfing)</h4>
+                <h4>Craving Wave Support</h4>
                 <p>
-                    When cravings peak, access emergency tools immediately. Synchronize your breathing with our Box Breathing visualizer, and type in your triggers to generate an on-demand AI survival plan outlining physical redirects and cognitive reframing steps.
+                    Regulate your system during temptations. Features guided box breathing rings and real-time custom AI-generated distraction instructions.
                 </p>
                 <ul class="feature-bullets">
-                    <li>Interactive guided breathing visualizer</li>
-                    <li>On-demand custom AI distraction plans</li>
-                    <li>Cognitive Reframing instructions</li>
+                    <li>Responsive paced breathing ring</li>
+                    <li>Cognitive reframing statement templates</li>
+                    <li>3-step personalized distractors</li>
                 </ul>
             </article>
         </div>

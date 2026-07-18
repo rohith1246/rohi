@@ -162,6 +162,47 @@ class RohiTestCase(unittest.TestCase):
             self.assertEqual(result, "Take a walk and call a friend to distract yourself.")
             self.assertTrue(mock_groq_post.called)
 
+    # 4. Authentication Verification Tests
+    def test_user_registration_success(self):
+        """Verify that a new user registration succeeds and redirects to dashboard."""
+        payload = {
+            "username": "NewSecureUser",
+            "password": "securepassword123",
+            "confirm_password": "securepassword123"
+        }
+        response = self.client.post("/register", data=payload)
+        # Should redirect (302) to dashboard
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/dashboard", response.headers["Location"])
+
+    def test_user_login_success(self):
+        """Verify login succeeds with correct credentials and fails with wrong credentials."""
+        # Register a test user with a hashed password directly
+        from werkzeug.security import generate_password_hash
+        hashed = generate_password_hash("mypassword")
+        user = User(username="SecureUser", password_hash=hashed)
+        self.db.add(user)
+        self.db.commit()
+
+        # Login with correct password
+        payload = {
+            "username": "SecureUser",
+            "password": "mypassword"
+        }
+        response = self.client.post("/login", data=payload)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/dashboard", response.headers["Location"])
+
+        # Login with wrong password
+        payload = {
+            "username": "SecureUser",
+            "password": "wrongpassword"
+        }
+        response = self.client.post("/login", data=payload)
+        # Should redirect back to login page on failure
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/login", response.headers["Location"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -3,7 +3,8 @@ import json
 import logging
 import datetime
 import requests
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
+from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 from database import SessionLocal
 from models import User, Habit, Log, Chat, Nudge, init_db
@@ -100,30 +101,86 @@ def index():
     """Profile selection landing page."""
     return render_template("index.html")
 
-@app.route("/set_user", methods=["POST"])
-def set_user():
-    """Sets username in session or creates a new user."""
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    """Handles new user profile registration with password hashing."""
+    if request.method == "GET":
+        return render_template("register.html")
+        
     username = request.form.get("username", "").strip()
-    if not username:
-        return redirect(url_for("index"))
+    password = request.form.get("password", "")
+    confirm_password = request.form.get("confirm_password", "")
+    
+    if not username or not password:
+        flash("Username and password are required.")
+        return redirect(url_for("register"))
+        
+    if password != confirm_password:
+        flash("Passwords do not match.")
+        return redirect(url_for("register"))
+        
+    db = SessionLocal()
+    try:
+        # Check if username is taken
+        existing_user = db.query(User).filter(User.username == username).first()
+        if existing_user:
+            flash("Username is already taken. Please choose another.")
+            return redirect(url_for("register"))
+            
+        hashed_password = generate_password_hash(password)
+        new_user = User(username=username, password_hash=hashed_password)
+        db.add(new_user)
+        db.commit()
+        
+        session["user_id"] = new_user.id
+        session["username"] = new_user.username
+        logger.info(f"Registered new secure user: {username}")
+        return redirect(url_for("dashboard"))
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed registering user: {e}")
+        flash("A server error occurred during registration. Please try again.")
+        return redirect(url_for("register"))
+    finally:
+        db.close()
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    """Handles secure user profile login, with legacy migration for passwordless test users."""
+    if request.method == "GET":
+        return render_template("login.html")
+        
+    username = request.form.get("username", "").strip()
+    password = request.form.get("password", "")
+    
+    if not username or not password:
+        flash("Please enter both username and password.")
+        return redirect(url_for("login"))
         
     db = SessionLocal()
     try:
         user = db.query(User).filter(User.username == username).first()
         if not user:
-            # Create user if it doesn't exist
-            user = User(username=username)
-            db.add(user)
+            flash("Invalid username or password.")
+            return redirect(url_for("login"))
+            
+        # Legacy check: automatically migrate passwordless testing user profile
+        if user.password_hash is None:
+            user.password_hash = generate_password_hash(password)
             db.commit()
-            logger.info(f"Created new user profile: {username}")
-        
+            logger.info(f"Migrated legacy user '{username}' with new password hash.")
+        elif not check_password_hash(user.password_hash, password):
+            flash("Invalid username or password.")
+            return redirect(url_for("login"))
+            
         session["user_id"] = user.id
         session["username"] = user.username
+        logger.info(f"Secure login successful for user: {username}")
         return redirect(url_for("dashboard"))
     except Exception as e:
-        db.rollback()
-        logger.error(f"Failed setting user session: {e}")
-        return redirect(url_for("index"))
+        logger.error(f"Failed login verification: {e}")
+        flash("A server error occurred during login. Please try again.")
+        return redirect(url_for("login"))
     finally:
         db.close()
 
