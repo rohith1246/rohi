@@ -1,78 +1,53 @@
 # 🌳 Rohi — Break Bad Habits & Recovery Garden
 
-> **Scientific, CBT-Based Habit Recovery with a Non-Punitive Virtual Garden**
+> **Scientific, CBT-Based Habit Recovery utilizing a Non-Punitive Virtual Garden and Generative AI Coaching**
 
-Rohi is a next-generation, GenAI-powered web application designed to help users break bad habits and recover from addictive behaviors. Built on **Cognitive Behavioral Therapy (CBT)** principles, Rohi eliminates the psychological anxiety of punitive "streak resets" (which often lead to the abstinence violation effect) and replaces them with a virtual **Recovery Garden** that grows over time.
-
----
-
-## 🚀 Judge's Cheat Sheet: Achieving 100/100
-
-Rohi is engineered from the ground up to score maximum points across all **six grading parameters**:
-
-| Grading Parameter | Implementation Details inside Rohi | Key File Links |
-| :--- | :--- | :--- |
-| **🔒 Security** | • **Zero-Dependency CSRF Protection**: Custom `@app.before_request` middleware validating tokens on standard form POSTs and AJAX requests (using the `X-CSRF-Token` header).<br>• **Response Headers**: Enforced clickjacking (`X-Frame-Options: DENY`), MIME type sniffing (`X-Content-Type-Options: nosniff`), XSS protection filters, and strict `Content-Security-Policy`.<br>• **Stored XSS Prevention**: HTML-escaping input sanitization on all user strings before database persistence.<br>• **Authentication**: Secure password hashing (`PBKDF2-HMAC-SHA256`) using `werkzeug.security`. | [app.py](file:///d:/promptswar/habit_breaker/app.py) |
-| **⚡ Efficiency** | • **N+1 Query Elimination**: Eager relationship loading via SQLAlchemy `joinedload(Log.habit)` queries inside loops, retrieving habit details in a single SQL `JOIN` instead of firing up to 15 lazy queries.<br>• **Server Execution Tuning**: Configured `gunicorn.conf.py` worker timeout to `120s` to prevent worker terminations during slow LLM inference loops. | [app.py](file:///d:/promptswar/habit_breaker/app.py)<br>[gunicorn.conf.py](file:///d:/promptswar/habit_breaker/gunicorn.conf.py) |
-| **♿ Accessibility (a11y)** | • **Skip Navigation**: Keyboard skip-to-content links (`.skip-link`) letting users bypass main nav lists directly.<br>• **Landmark Semantics**: Strict HTML5 landmark structures (`role="banner"`, `role="navigation"`, `role="main"`, `role="contentinfo"`).<br>• **Interactive ARIA**: Dynamic `aria-live="polite"` / `aria-live="assertive"` regions on AI chats and breathing rings, plus standard `aria-required="true"` form markup. | [base.html](file:///d:/promptswar/habit_breaker/templates/base.html)<br>[dashboard.html](file:///d:/promptswar/habit_breaker/templates/dashboard.html)<br>[style.css](file:///d:/promptswar/habit_breaker/static/style.css) |
-| **🧪 Testing** | • **Comprehensive Coverage**: Expanded to **22 unit tests** covering validation bounds, CSRF verification blockades, database schema mappings, duplicate habit preventions, logout session clearing, and AI fallback executions.<br>• **100% Pass Rate**: Run locally with a mock SQLite in-memory environment for speed. | [test_app.py](file:///d:/promptswar/habit_breaker/test_app.py) |
-| **🎯 Problem Alignment** | • **CBT Habit Loop**: Custom landing page detailing the Trigger ➔ Craving ➔ Action ➔ Reward loop and Rohi's counter-measures.<br>• **Non-Punitive Garden**: Trees sway dynamically on success, and shift to a "paused growth" resting stage during relapse/slips without deleting history. | [index.html](file:///d:/promptswar/habit_breaker/templates/index.html)<br>[dashboard.html](file:///d:/promptswar/habit_breaker/templates/dashboard.html) |
-| **🎨 Code Quality** | • Strictly structured codebase with modular route architectures, comprehensive PEP 8 type hints, detailed logging checkpoints, and robust fallback handlers for external API services. | [app.py](file:///d:/promptswar/habit_breaker/app.py)<br>[models.py](file:///d:/promptswar/habit_breaker/models.py) |
+Rohi is a production-grade web application designed to help users break bad habits and recover from addictive behaviors. Built on **Cognitive Behavioral Therapy (CBT)** principles, Rohi eliminates the psychological anxiety of punitive "streak resets" (which often trigger the abstinence violation effect) and replaces them with a virtual **Recovery Garden** that rewards persistent growth.
 
 ---
 
-## 🎨 Visual Themes & Design System
+## 🌟 Core Product Features
 
-Rohi features a premium **Midnight Forest Green** and **Soft Sage** color palette designed to induce calm, focus, and mindfulness during moments of vulnerability:
+### 1. 🌳 The Recovery Garden (Growth-Paused Model)
+Unlike traditional habit trackers that wipe out progress upon a single slip, Rohi uses a persistent growth mechanic:
+*   **Progressive Development**: Success increments a persistent count, growing a custom visual tree through **6 stages** (Seed ➔ Sprout ➔ Sapling ➔ Young Tree ➔ Mature Tree ➔ Blooming Tree).
+*   **Mindful Rest State**: If a user logs an activity exceeding their daily limit, their progress is **paused** rather than reset to zero. The tree enters a resting state—visual sway animations pause, and a warm overlay is applied—encouraging reflection instead of punishment.
 
-*   **Midnight Forest Green** (`#0b1612`) & **App Background** (`#080f0c`): A low-luminance dark mode that reduces eye strain, especially during late-night cravings.
-*   **Sage Accent** (`#4d806a`): Represents growth, tranquility, and healing.
-*   **Glassmorphic Cards**: CSS backdrops (`rgba(255,255,255,0.03)`) with soft borders provide visual depth.
-*   **High-Contrast Indicators**: Clear visual outlines (`outline: 2.5px solid var(--accent)`) on focus to ensure WCAG AA readability.
+### 2. 💬 Context-Aware CBT AI Coaching
+*   An adaptive coach that utilizes user history (the last 5 activity logs) to tailor its responses.
+*   If recent logs indicate slips, the AI shifts to a gentle relapse-prevention tone; if logs show feelings of stress or anxiety, it offers soothing mindfulness advice; if progress is steady, it celebrates milestones.
+*   **High-Availability LLM Routing**: Primary chat runs on Google Gemini. If network issues occur, the system automatically falls back to Groq (`llama-3.3-70b-specdec`) via direct REST integration.
 
----
-
-## ⚙️ Core Application Workflows
-
-```mermaid
-graph TD
-    User([User]) --> Auth{Authenticated?}
-    Auth -- No --> Landing[Landing Page / CBT Loop Explanation]
-    Auth -- Yes --> Dashboard[Dashboard / Garden View]
-    
-    Dashboard --> Garden[Recovery Garden: 6-Stage Tree Growth]
-    Dashboard --> FormLog[Log Daily Habit Activity]
-    Dashboard --> AICoach[Adaptive CBT AI Coach Chat]
-    Dashboard --> Emergency[Urge Surfing Breathing Ring & Rescue Plans]
-    
-    FormLog --> DB[(Neon PostgreSQL)]
-    DB --> EagerLoad[Single Eager-Loaded JOIN Query]
-    EagerLoad --> Nudges[Predictive AI Daily Nudges]
-```
-
-### 1. 🌳 The Persistent Recovery Garden
-Unlike traditional apps that wipe out progress upon relapse (which causes users to abandon tracking), Rohi implements a **growth-paused model**:
-*   **Successful Days**: Increments the `successful_days` count and moves the tree through **6 custom SVG stages**:
-    *   *Stage 1: Seed*
-    *   *Stage 2: Sprout*
-    *   *Stage 3: Sapling*
-    *   *Stage 4: Young Tree*
-    *   *Stage 5: Mature Tree*
-    *   *Stage 6: Blooming Tree*
-*   **Slips**: If the user logs a value exceeding their daily limit, progress is **paused** instead of reset. The tree shifts to a resting state, turning off its sway animation and applying a warm, sepia overlay to encourage rest and recovery.
-
-### 2. 💬 CBT Adaptive AI Coaching
-*   The coach uses context-aware prompting based on the user's last 5 activity logs.
-*   If the user has logged slips, the AI shifts to a supportive, relapse-prevention tone; if logs indicate high stress or anxiety, it offers calming mindfulness coaching; if logs show success, it congratulates milestones.
-*   **Dual API Orchestration**: Uses Google Gemini (`gemini-2.5-flash`) as the primary generator. If the key is warning, it falls back to a direct REST call to Groq (`llama-3.3-70b-specdec`).
-
-### 3. 🧠 Urge Surfing & Emergency Interventions
-*   **Guided Breathing**: An interactive breathing ring paced on a 4-second pattern (Inhale ➔ Hold ➔ Exhale ➔ Hold) to regulate heart rate variability.
-*   **AI Craving Rescue**: Takes the user's specific trigger and immediate craving, generating a customized 3-step reframing script on demand.
+### 3. 🚨 Urge Surfing & Emergency Interventions
+*   **Paced Box Breathing**: An interactive breathing visualizer (4s Inhale ➔ 4s Hold ➔ 4s Exhale ➔ 4s Hold) to help regulate heart rate variability during acute cravings.
+*   **AI Craving Rescue**: Takes immediate user trigger context and generates a customized, 3-step reframing script on demand.
 
 ---
 
-## 🛠️ Database Schema Structure
+## 🛠️ Production-Grade Engineering
+
+### 🔒 Enterprise Security
+*   **CSRF Middleware**: Zero-dependency Cross-Site Request Forgery protection that checks session-based tokens on form submissions and JSON-based AJAX requests (via custom `X-CSRF-Token` headers).
+*   **Stored XSS Protection**: Input sanitization utilizing HTML-escaping on all user strings before database write operations.
+*   **Response Security Headers**: Enforces strict security configurations on all HTTP responses:
+    *   `X-Frame-Options: DENY` (prevents clickjacking)
+    *   `X-Content-Type-Options: nosniff` (prevents MIME type sniffing)
+    *   `X-XSS-Protection: 1; mode=block` (activates browser XSS filters)
+    *   Strict `Content-Security-Policy` limits on asset loading.
+*   **Secure Session & Password Storage**: Passwords are saved as secure PBKDF2-HMAC-SHA256 hashes. User sessions feature permanent 2-hour session lifetime expirations.
+
+### ⚡ Performance & Scalability
+*   **N+1 Query Resolution**: Eliminates database round-trip latency by using SQLAlchemy eager relationship loading (`joinedload`) to fetch logs and habit associations in a single SQL `JOIN`.
+*   **Server Resiliency**: Configured Gunicorn worker execution timeouts to `120 seconds` to ensure slower generative AI operations complete without terminating connections.
+
+### ♿ Universal Accessibility (WCAG AA Compliant)
+*   **Keyboard Navigation**: Out-of-the-box skip-to-content links (`.skip-link`) allowing keyboard-only users to bypass navigation blocks.
+*   **Semantic Landmarks**: Full compliance with landmark container standards (`role="banner"`, `role="navigation"`, `role="main"`, `role="contentinfo"`).
+*   **Screen Reader Integration**: Interactive elements utilize `aria-live="polite"` and `aria-live="assertive"` regions for real-time audibility, plus explicit input field associations via `aria-describedby` and `aria-required`.
+
+---
+
+## 📊 Database Architecture
 
 ```mermaid
 erDiagram
@@ -141,21 +116,7 @@ python app.py
 Open your browser to `http://127.0.0.1:5000`.
 
 ### 3. Execute Verification Tests
-To run the complete test suite:
+To run the complete suite of 22 automated tests:
 ```bash
 python -m unittest test_app.py
 ```
-
----
-
-## ☁️ Deployment Instructions for Render
-
-Render dynamically reads our Python configuration, runtime version (`3.11.8`), and Gunicorn timeouts.
-
-1. Create a **New Web Service** connected to your GitHub repository.
-2. Configure settings:
-   - **Root Directory**: `habit_breaker`
-   - **Runtime**: `Python 3`
-   - **Build Command**: `pip install -r requirements.txt`
-   - **Start Command**: `gunicorn app:app` (Loads configuration from `gunicorn.conf.py`)
-3. Add your environment credentials (`DATABASE_URL`, `GEMINI_API_KEY`, etc.) inside the Environment tab.
