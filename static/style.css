@@ -2,21 +2,21 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
 
 :root {
-    --bg-app: #060b08;       /* Deep Midnight Forest Green */
-    --bg-card: rgba(16, 26, 19, 0.6); /* Glassmorphic Slate Green */
-    --bg-input: #0e1912;     /* Inset input box green */
+    --bg-app: #f4f7f5;       /* Soothing Off-White / Soft Sage Tint */
+    --bg-card: rgba(255, 255, 255, 0.85); /* Crisp White Glassmorphic */
+    --bg-input: #ffffff;     /* Clear White Input fields */
     
-    --primary: #4a805a;      /* Calming Sage Green */
-    --primary-light: #eff7f2;
-    --primary-hover: #3d6a4a;
-    --accent: #8bc34a;       /* Fresh Mint Bud */
+    --primary: #3d6a4a;      /* Deep Calming Sage Green */
+    --primary-light: #e8f2eb;
+    --primary-hover: #2f5239;
+    --accent: #558b2f;       /* Richer Grass Green (satisfies WCAG AA contrast) */
     
-    --text-main: #f1f6f2;    /* Soft Clean Cream */
-    --text-muted: #869b8d;   /* Muted Greenish Grey */
-    --border-color: rgba(74, 128, 90, 0.22);
+    --text-main: #1b261f;    /* Deep Charcoal Forest Green */
+    --text-muted: #53665a;   /* Slate Greenish Gray */
+    --border-color: rgba(61, 106, 74, 0.15);
     
-    --shadow-soft: 0 12px 40px rgba(0, 0, 0, 0.4);
-    --shadow-glow: 0 0 15px rgba(74, 128, 90, 0.1);
+    --shadow-soft: 0 12px 40px rgba(61, 106, 74, 0.06);
+    --shadow-glow: 0 0 15px rgba(61, 106, 74, 0.05);
     
     --radius-lg: 20px;
     --radius-md: 14px;
@@ -32,7 +32,7 @@
 
 body {
     font-family: 'Inter', sans-serif;
-    background: radial-gradient(circle at 50% 0%, #0d2217 0%, #060b08 80%);
+    background: radial-gradient(circle at 50% 0%, #eef5f0 0%, #f4f7f5 80%);
     color: var(--text-main);
     line-height: 1.6;
     min-height: 100vh;
@@ -803,7 +803,7 @@ h1, h2, h3, h4 {
 .hero-title {
     font-size: 2.4rem;
     line-height: 1.2;
-    background: linear-gradient(135deg, #ffffff, var(--primary));
+    background: linear-gradient(135deg, var(--text-main), var(--primary));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -922,7 +922,7 @@ h1, h2, h3, h4 {
 }
 
 .loop-step {
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(61, 106, 74, 0.03);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     padding: 1.8rem;
@@ -936,8 +936,8 @@ h1, h2, h3, h4 {
 .loop-step:hover {
     border-color: var(--accent);
     transform: translateY(-4px);
-    box-shadow: var(--shadow-soft), 0 0 20px rgba(139, 195, 74, 0.08);
-    background: rgba(255, 255, 255, 0.03);
+    box-shadow: var(--shadow-soft), 0 0 20px rgba(85, 139, 47, 0.08);
+    background: rgba(61, 106, 74, 0.06);
 }
 
 .step-num {
@@ -992,7 +992,7 @@ h1, h2, h3, h4 {
 
 /* Glassmorphism Hero Graphic Card */
 .hero-graphic-card {
-    background: rgba(16, 26, 19, 0.4);
+    background: var(--bg-card);
     backdrop-filter: blur(8px);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);
