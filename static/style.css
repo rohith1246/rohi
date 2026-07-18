@@ -297,8 +297,8 @@ h1, h2, h3, h4 {
     display: flex;
     gap: 1.2rem;
     align-items: flex-start;
-    background-color: #122117;
-    border: 1px dashed rgba(139, 195, 74, 0.3);
+    background-color: rgba(61, 106, 74, 0.08);
+    border: 1px dashed rgba(61, 106, 74, 0.3);
     border-radius: var(--radius-md);
     padding: 1.2rem 1.5rem;
     margin-bottom: 1.5rem;
@@ -518,15 +518,15 @@ h1, h2, h3, h4 {
 }
 
 .provider-badge.gemini {
-    background-color: rgba(3, 105, 161, 0.2);
-    color: #38bdf8;
-    border: 1px solid rgba(3, 105, 161, 0.3);
+    background-color: rgba(3, 105, 161, 0.1);
+    color: #0284c7; /* Darker blue for contrast */
+    border: 1px solid rgba(3, 105, 161, 0.2);
 }
 
 .provider-badge.groq {
-    background-color: rgba(217, 119, 6, 0.2);
-    color: #fbbf24;
-    border: 1px solid rgba(217, 119, 6, 0.3);
+    background-color: rgba(217, 119, 6, 0.1);
+    color: #d97706; /* Darker amber/orange for contrast */
+    border: 1px solid rgba(217, 119, 6, 0.2);
 }
 
 /* Chat Bubbles Scroll Window */
@@ -537,7 +537,7 @@ h1, h2, h3, h4 {
     display: flex;
     flex-direction: column;
     gap: 1.2rem;
-    background-color: rgba(0, 0, 0, 0.1);
+    background-color: rgba(61, 106, 74, 0.02);
 }
 
 .chat-empty-state {
@@ -564,7 +564,7 @@ h1, h2, h3, h4 {
 
 .coach-bubble {
     align-self: flex-start;
-    background-color: #16241b;
+    background-color: var(--primary-light);
     border: 1px solid var(--border-color);
     color: var(--text-main);
     border-bottom-left-radius: 2px;
