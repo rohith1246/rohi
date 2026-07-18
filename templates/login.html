@@ -31,7 +31,10 @@
 
         <div class="form-group" style="margin-top: 1rem;">
             <label for="password-input">Password</label>
-            <input type="password" id="password-input" name="password" placeholder="••••••••" required aria-required="true" minlength="4" autocomplete="current-password" {% if messages %}aria-describedby="auth-error"{% endif %}>
+            <div class="password-wrapper" style="position: relative; display: flex; align-items: center;">
+                <input type="password" id="password-input" name="password" placeholder="••••••••" required aria-required="true" minlength="6" autocomplete="current-password" style="width: 100%; padding-right: 2.5rem;" {% if messages %}aria-describedby="auth-error"{% endif %}>
+                <button type="button" class="toggle-password-btn" aria-label="Show password" style="position: absolute; right: 10px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; padding: 0.2rem; outline: none; z-index: 5;">👁️</button>
+            </div>
         </div>
 
         <button type="submit" class="btn-primary" style="margin-top: 2rem;">Login to Garden</button>
@@ -42,4 +45,23 @@
         Don't have a profile? <a href="{{ url_for('register') }}" style="color: var(--accent); text-decoration: none; font-weight: 600;">Create one here</a>
     </p>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.querySelectorAll(".toggle-password-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const input = btn.previousElementSibling;
+            if (input.type === "password") {
+                input.type = "text";
+                btn.textContent = "🙈";
+                btn.setAttribute("aria-label", "Hide password");
+            } else {
+                input.type = "password";
+                btn.textContent = "👁️";
+                btn.setAttribute("aria-label", "Show password");
+            }
+        });
+    });
+</script>
 {% endblock %}

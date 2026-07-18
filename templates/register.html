@@ -31,12 +31,28 @@
 
         <div class="form-group" style="margin-top: 1rem;">
             <label for="password-input">Password</label>
-            <input type="password" id="password-input" name="password" placeholder="Min. 4 characters" required aria-required="true" minlength="4" autocomplete="new-password" {% if messages %}aria-describedby="reg-error"{% endif %}>
+            <div class="password-wrapper" style="position: relative; display: flex; align-items: center;">
+                <input type="password" id="password-input" name="password" placeholder="Min. 6 characters" required aria-required="true" minlength="6" autocomplete="new-password" style="width: 100%; padding-right: 2.5rem;" {% if messages %}aria-describedby="reg-error"{% endif %}>
+                <button type="button" class="toggle-password-btn" aria-label="Show password" style="position: absolute; right: 10px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; padding: 0.2rem; outline: none; z-index: 5;">👁️</button>
+            </div>
+            <!-- Password Strength Indicator -->
+            <div id="password-strength-container" style="margin-top: 0.5rem; display: none;">
+                <div style="display: flex; gap: 4px; height: 6px; margin-bottom: 0.3rem;">
+                    <div class="strength-bar" style="flex: 1; height: 100%; background: #2a3b33; border-radius: 3px; transition: background 0.3s;"></div>
+                    <div class="strength-bar" style="flex: 1; height: 100%; background: #2a3b33; border-radius: 3px; transition: background 0.3s;"></div>
+                    <div class="strength-bar" style="flex: 1; height: 100%; background: #2a3b33; border-radius: 3px; transition: background 0.3s;"></div>
+                    <div class="strength-bar" style="flex: 1; height: 100%; background: #2a3b33; border-radius: 3px; transition: background 0.3s;"></div>
+                </div>
+                <div id="password-strength-text" style="font-size: 0.8rem; font-weight: 600; transition: color 0.3s;">Strength: Weak</div>
+            </div>
         </div>
 
         <div class="form-group" style="margin-top: 1rem;">
             <label for="confirm-password-input">Confirm Password</label>
-            <input type="password" id="confirm-password-input" name="confirm_password" placeholder="Confirm your password" required aria-required="true" minlength="4" autocomplete="new-password" {% if messages %}aria-describedby="reg-error"{% endif %}>
+            <div class="password-wrapper" style="position: relative; display: flex; align-items: center;">
+                <input type="password" id="confirm-password-input" name="confirm_password" placeholder="Confirm your password" required aria-required="true" minlength="6" autocomplete="new-password" style="width: 100%; padding-right: 2.5rem;" {% if messages %}aria-describedby="reg-error"{% endif %}>
+                <button type="button" class="toggle-password-btn" aria-label="Show confirm password" style="position: absolute; right: 10px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; padding: 0.2rem; outline: none; z-index: 5;">👁️</button>
+            </div>
         </div>
 
         <button type="submit" class="btn-primary" style="margin-top: 2rem;">Plant Your Seed</button>
@@ -54,6 +70,9 @@
     const form = document.getElementById("register-form");
     const password = document.getElementById("password-input");
     const confirmPassword = document.getElementById("confirm-password-input");
+    const strengthContainer = document.getElementById("password-strength-container");
+    const strengthBars = document.querySelectorAll(".strength-bar");
+    const strengthText = document.getElementById("password-strength-text");
 
     form.addEventListener("submit", (e) => {
         if (password.value !== confirmPassword.value) {
@@ -61,6 +80,62 @@
             alert("Passwords do not match! Please enter matching passwords.");
             confirmPassword.focus();
         }
+    });
+
+    password.addEventListener("input", () => {
+        const val = password.value;
+        if (!val) {
+            strengthContainer.style.display = "none";
+            return;
+        }
+        strengthContainer.style.display = "block";
+
+        let score = 0;
+        if (val.length >= 6) score++;
+        if (val.length >= 10) score++;
+        if (/[A-Z]/.test(val)) score++;
+        if (/[0-9]/.test(val)) score++;
+        if (/[^A-Za-z0-9]/.test(val)) score++;
+
+        // Cap score at 4
+        score = Math.min(score, 4);
+
+        // Define colors and labels
+        const configs = [
+            { label: "Very Weak", color: "#ef4444", count: 1 },  // Red
+            { label: "Weak", color: "#f97316", count: 2 },       // Orange
+            { label: "Fair", color: "#eab308", count: 3 },       // Yellow
+            { label: "Strong", color: "#22c55e", count: 4 }      // Green
+        ];
+
+        const config = configs[score - 1] || { label: "Very Weak", color: "#ef4444", count: 1 };
+
+        // Reset all bars
+        strengthBars.forEach((bar, index) => {
+            if (index < config.count) {
+                bar.style.backgroundColor = config.color;
+            } else {
+                bar.style.backgroundColor = "#2a3b33";
+            }
+        });
+
+        strengthText.innerText = `Strength: ${config.label}`;
+        strengthText.style.color = config.color;
+    });
+
+    document.querySelectorAll(".toggle-password-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const input = btn.previousElementSibling;
+            if (input.type === "password") {
+                input.type = "text";
+                btn.textContent = "🙈";
+                btn.setAttribute("aria-label", "Hide password");
+            } else {
+                input.type = "password";
+                btn.textContent = "👁️";
+                btn.setAttribute("aria-label", "Show password");
+            }
+        });
     });
 </script>
 {% endblock %}
