@@ -148,4 +148,20 @@ class Nudge(Base):
         }
 
 def init_db():
+    from sqlalchemy import text
     Base.metadata.create_all(bind=engine)
+    with engine.connect() as conn:
+        try:
+            dialect_name = engine.name
+            if dialect_name == "postgresql":
+                conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(200);"))
+                conn.commit()
+            elif dialect_name == "sqlite":
+                try:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN password_hash VARCHAR(200);"))
+                    conn.commit()
+                except Exception:
+                    pass
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f"Database migration warning: {e}")
